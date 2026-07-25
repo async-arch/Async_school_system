@@ -20,9 +20,25 @@ class SchoolStudent(models.Model):
         ('female', 'Female'),
         ('other', 'Other'),
     ], string='Gender')
+    nationality_id = fields.Many2one('res.country', string='Nationality')
 
     guardian_name = fields.Char(string='Parent / Guardian Name', required=True)
-    guardian_phone = fields.Char(string='Guardian Phone', required=True)
+    guardian_phone = fields.Char(string='Guardian Phone', required=True,
+                                  help='Enter the local number. Country code is added automatically based on Nationality.')
+    address = fields.Text(string='Address')
+
+    emergency_contact_name = fields.Char(string='Emergency Contact Name')
+    emergency_contact_phone = fields.Char(string='Emergency Contact Phone',
+                                           help='Enter the local number. Country code is added automatically based on Nationality.')
+
+    education_level = fields.Selection([
+        ('kindergarten', 'Kindergarten'),
+        ('primary', 'Primary'),
+        ('secondary', 'Secondary'),
+        ('high_school', 'High School'),
+    ], string='Education Level')
+    class_id = fields.Many2one('school.class', string='Grade / Class', required=True,
+                                domain="[('education_level', '=', education_level)]")
 
     registration_status = fields.Selection([
         ('draft', 'Draft'),
@@ -41,7 +57,6 @@ class SchoolStudent(models.Model):
     previous_grade_document = fields.Binary(string='Previous Grade Document', attachment=True)
     previous_grade_document_filename = fields.Char(string='Previous Grade Document Filename')
 
-    class_id = fields.Many2one('school.class', string='Grade / Class', required=True)
     active = fields.Boolean(string='Active', default=True)
 
     _sql_constraints = [
@@ -54,6 +69,25 @@ class SchoolStudent(models.Model):
         for rec in self:
             rec.age = relativedelta(today, rec.date_of_birth).years if rec.date_of_birth else 0
 
+    def _get_full_phone(self, phone):
+        """Combine the nationality's country code with a locally-entered phone number."""
+        if not phone:
+            return False
+        phone = phone.strip()
+        if phone.startswith('+'):
+            return phone
+        if self.nationality_id and self.nationality_id.phone_code:
+            digits = re.sub(r'\D', '', phone)
+            return '+%s%s' % (self.nationality_id.phone_code, digits)
+        return phone
+
+    def _is_valid_phone(self, phone):
+        full_phone = self._get_full_phone(phone)
+        if not full_phone or not full_phone.startswith('+'):
+            return False
+        digits = re.sub(r'\D', '', full_phone)
+        return len(digits) >= 7
+
     def _validate_submission_requirements(self):
         missing = []
         if not self.name:
@@ -62,14 +96,14 @@ class SchoolStudent(models.Model):
             missing.append('Date of Birth')
         if not self.guardian_name:
             missing.append('Parent / Guardian Name')
-        if not self.guardian_phone or len(re.sub(r'\D', '', self.guardian_phone)) < 7:
-            missing.append('Guardian Phone (must contain at least 7 digits)')
+        if not self._is_valid_phone(self.guardian_phone):
+            missing.append('Guardian Phone (invalid number — set Nationality for automatic country code, or include + code manually)')
         if not self.class_id:
             missing.append('Grade / Class')
         if not self.birth_certificate:
             missing.append('Birth Certificate')
-        if not self.previous_grade_document:
-            missing.append('Previous Grade Document')
+        if self.class_id and not self.class_id.is_entry_level and not self.previous_grade_document:
+            missing.append('Previous Grade Document (required unless class is entry-level)')
         return missing
 
     @api.constrains('registration_status', 'name', 'date_of_birth', 'guardian_name',
@@ -81,7 +115,7 @@ class SchoolStudent(models.Model):
             missing = rec._validate_submission_requirements()
             if missing:
                 raise ValidationError(
-                    "Cannot mark the student as %s while the following required fields are missing: %s"
+                    "Cannot mark the student as %s while the following issues exist: %s"
                     % (rec.registration_status.title(), ', '.join(missing))
                 )
 
@@ -97,7 +131,7 @@ class SchoolStudent(models.Model):
             missing = rec._validate_submission_requirements()
             if missing:
                 raise ValidationError(
-                    "Cannot submit: missing %s" % ', '.join(missing)
+                    "Cannot submit: %s" % ', '.join(missing)
                 )
             rec.registration_status = 'submitted'
 

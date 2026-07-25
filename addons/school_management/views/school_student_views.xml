@@ -1,4 +1,18 @@
 <odoo>
+    <record id="view_school_student_tree" model="ir.ui.view">
+        <field name="name">school.student.tree</field>
+        <field name="model">school.student</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="regno"/>
+                <field name="name"/>
+                <field name="class_id"/>
+                <field name="guardian_name"/>
+                <field name="registration_status"/>
+            </tree>
+        </field>
+    </record>
+
     <record id="view_school_student_form" model="ir.ui.view">
         <field name="name">school.student.form</field>
         <field name="model">school.student</field>
@@ -7,6 +21,7 @@
                 <header>
                     <button name="action_mark_submitted" type="object" string="Submit" class="oe_highlight" invisible="registration_status != 'draft'"/>
                     <button name="action_mark_approved" type="object" string="Approve" class="oe_highlight" invisible="registration_status != 'submitted'"/>
+                    <button string="Discard" special="cancel" class="btn-secondary"/>
                     <field name="registration_status" widget="statusbar" statusbar_visible="draft,submitted,approved"/>
                 </header>
                 <sheet>
@@ -17,13 +32,20 @@
                             <field name="date_of_birth"/>
                             <field name="age" readonly="1"/>
                             <field name="gender"/>
-                            <field name="class_id"/>
+                            <field name="nationality_id"/>
+                            <field name="education_level"/>
+                            <field name="class_id" options="{'no_create': True, 'no_create_edit': True}"/>
                         </group>
                         <group string="Parent / Guardian">
                             <field name="guardian_name"/>
-                            <field name="guardian_phone"/>
+                            <field name="guardian_phone" placeholder="e.g. 912345678 (no country code needed)"/>
                             <field name="previous_school"/>
+                            <field name="address"/>
                         </group>
+                    </group>
+                    <group string="Emergency Contact">
+                        <field name="emergency_contact_name"/>
+                        <field name="emergency_contact_phone" placeholder="e.g. 912345678 (no country code needed)"/>
                     </group>
                     <group string="Documents">
                         <field name="birth_certificate" filename="birth_certificate_filename"/>
@@ -44,6 +66,6 @@
     <record id="action_school_student" model="ir.actions.act_window">
         <field name="name">Students</field>
         <field name="res_model">school.student</field>
-        <field name="view_mode">form,tree</field>
+        <field name="view_mode">tree,form</field>
     </record>
 </odoo>

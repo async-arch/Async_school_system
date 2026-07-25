@@ -1,0 +1,113 @@
+<odoo>
+    <data noupdate="1">
+        <record id="class_kg1" model="school.class">
+            <field name="name">KG1</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">kindergarten</field>
+            <field name="is_entry_level">True</field>
+            <field name="min_age">3</field>
+            <field name="max_age">4</field>
+        </record>
+        <record id="class_kg2" model="school.class">
+            <field name="name">KG2</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">kindergarten</field>
+            <field name="min_age">4</field>
+            <field name="max_age">5</field>
+        </record>
+        <record id="class_kg3" model="school.class">
+            <field name="name">KG3</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">kindergarten</field>
+            <field name="min_age">5</field>
+            <field name="max_age">6</field>
+        </record>
+
+        <record id="class_grade_1" model="school.class">
+            <field name="name">Grade 1</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">6</field>
+            <field name="max_age">7</field>
+        </record>
+        <record id="class_grade_2" model="school.class">
+            <field name="name">Grade 2</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">7</field>
+            <field name="max_age">8</field>
+        </record>
+        <record id="class_grade_3" model="school.class">
+            <field name="name">Grade 3</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">8</field>
+            <field name="max_age">9</field>
+        </record>
+        <record id="class_grade_4" model="school.class">
+            <field name="name">Grade 4</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">9</field>
+            <field name="max_age">10</field>
+        </record>
+        <record id="class_grade_5" model="school.class">
+            <field name="name">Grade 5</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">10</field>
+            <field name="max_age">11</field>
+        </record>
+        <record id="class_grade_6" model="school.class">
+            <field name="name">Grade 6</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">11</field>
+            <field name="max_age">12</field>
+        </record>
+        <record id="class_grade_7" model="school.class">
+            <field name="name">Grade 7</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">12</field>
+            <field name="max_age">13</field>
+        </record>
+        <record id="class_grade_8" model="school.class">
+            <field name="name">Grade 8</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">primary</field>
+            <field name="min_age">13</field>
+            <field name="max_age">14</field>
+        </record>
+
+        <record id="class_grade_9" model="school.class">
+            <field name="name">Grade 9</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">secondary</field>
+            <field name="min_age">14</field>
+            <field name="max_age">15</field>
+        </record>
+        <record id="class_grade_10" model="school.class">
+            <field name="name">Grade 10</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">secondary</field>
+            <field name="min_age">15</field>
+            <field name="max_age">16</field>
+        </record>
+
+        <record id="class_grade_11" model="school.class">
+            <field name="name">Grade 11</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">high_school</field>
+            <field name="min_age">16</field>
+            <field name="max_age">17</field>
+        </record>
+        <record id="class_grade_12" model="school.class">
+            <field name="name">Grade 12</field>
+            <field name="academic_year">2026-2027</field>
+            <field name="education_level">high_school</field>
+            <field name="min_age">17</field>
+            <field name="max_age">18</field>
+        </record>
+    </data>
+</odoo>

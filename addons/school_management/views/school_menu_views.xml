@@ -1,14 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <menuitem id="menu_school_management_root"
-              name="School Management"
+    <!-- Main Academic Category Menu from Registration Feature -->
+    <menuitem id="menu_academic_root"
+              name="Academic"
+              parent="school_management.menu_root"
               sequence="10"/>
 
-    <menuitem id="menu_school_mark"
-              name="Mark List"
-              parent="menu_school_management_root"
-              action="action_school_mark"
-              sequence="30"/>
+    <menuitem id="menu_student_registration"
+              name="Registrations"
+              parent="menu_academic_root"
+              sequence="10"
+              action="action_student_registration"/>
 
+    <!-- Added Mark List entry under the Academic category -->
+    <menuitem id="menu_school_mark"
+              name="Mark Lists"
+              parent="menu_academic_root"
+              sequence="30"
+              action="action_school_mark"/>
 </odoo>

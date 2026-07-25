@@ -23,6 +23,7 @@ attendance tracking and mark/result entry referencing the same student record.
         'security/school_security.xml',
         'security/ir.model.access.csv',
         'data/school_sequence.xml',
+        'data/school_class_seed_data.xml',
         'views/school_class_views.xml',
         'views/school_student_views.xml',
         'views/school_attendance_views.xml',
@@ -34,4 +35,11 @@ attendance tracking and mark/result entry referencing the same student record.
     'demo': [
         'demo/school_demo.xml',
     ],
+
+    # ======================================================= #
+   
+    # ======================================================= #
+    'application': True,  
+    'installable': True,
+    'auto_install': False,
 }
