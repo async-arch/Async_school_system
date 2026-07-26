@@ -58,19 +58,19 @@ class SchoolMark(models.Model):
     def _compute_result(self):
         for rec in self:
             if rec.max_mark:
-                rec.percentage = (rec.score / rec.max_mark) * 100
+                rec.percentage = rec.score / rec.max_mark if rec.max_mark else 0.0
             else:
                 rec.percentage = 0.0
 
-            if rec.percentage >= 90:
+            if rec.percentage >= 0.9:
                 rec.grade = 'A'
-            elif rec.percentage >= 80:
+            elif rec.percentage >= 0.8:
                 rec.grade = 'B'
-            elif rec.percentage >= 70:
+            elif rec.percentage >= 0.7:
                 rec.grade = 'C'
-            elif rec.percentage >= 50:
+            elif rec.percentage >= 0.5:
                 rec.grade = 'D'
             else:
                 rec.grade = 'F'
 
-            rec.pass_fail = 'pass' if rec.percentage >= 50 else 'fail'
+            rec.pass_fail = 'pass' if rec.percentage >= 0.5 else 'fail'
