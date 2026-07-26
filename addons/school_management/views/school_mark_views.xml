@@ -6,7 +6,7 @@
         <field name="name">school.mark.list</field>
         <field name="model">school.mark</field>
         <field name="arch" type="xml">
-            <list string="Mark List" editable="bottom">
+            <tree string="Mark List" editable="bottom">
                 <field name="student_id"/>
                 <field name="class_id"/>
                 <field name="academic_year"/>
@@ -19,7 +19,7 @@
                 <field name="grade"/>
                 <field name="pass_fail" widget="badge" decoration-success="pass_fail == 'pass'" decoration-danger="pass_fail == 'fail'"/>
                 <field name="teacher_id"/>
-            </list>
+            </tree>
         </field>
     </record>
 
@@ -93,7 +93,7 @@
     <record id="action_school_mark" model="ir.actions.act_window">
         <field name="name">Mark List</field>
         <field name="res_model">school.mark</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">tree,form</field>
         <field name="search_view_id" ref="view_school_mark_search"/>
         <field name="context">{'search_default_group_by_class': 1}</field>
         <field name="help" type="html">
