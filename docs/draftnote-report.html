@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DraftNote — QA and Integration Working Update</title>
+<style>
+  @page { size: A4; margin: 20mm 18mm 18mm 18mm; }
+
+  html { font-size: 10.5pt; }
+  body {
+    font-family: "Noto Serif", "Liberation Serif", Georgia, serif;
+    color: #16181d;
+    line-height: 1.55;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .label, table, figcaption, .meta, .foot {
+    font-family: "Noto Sans", "Liberation Sans", Arial, sans-serif;
+  }
+
+  /* ---------- title block ---------- */
+  .masthead { border-bottom: 1.5pt solid #16181d; padding-bottom: 10pt; margin-bottom: 20pt; }
+  .org {
+    font-size: 7.5pt; letter-spacing: 0.14em; text-transform: uppercase;
+    color: #5b6068; margin-bottom: 14pt;
+  }
+  h1 {
+    font-size: 20pt; font-weight: 600; letter-spacing: -0.01em;
+    margin: 0 0 4pt 0; line-height: 1.2;
+  }
+  .subtitle { font-size: 10.5pt; color: #4a4f57; margin: 0; font-style: italic; }
+
+  /* ---------- metadata ---------- */
+  .meta { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 22pt; }
+  .meta td { padding: 3pt 0; vertical-align: top; border: 0; }
+  .meta td:first-child {
+    width: 27%; color: #5b6068; letter-spacing: 0.04em; text-transform: uppercase;
+    font-size: 7.5pt; padding-top: 4.2pt;
+  }
+  .meta td:last-child { font-family: "Noto Serif", serif; }
+
+  /* ---------- sections ---------- */
+  h2 {
+    font-size: 11pt; font-weight: 600; margin: 22pt 0 8pt 0;
+    padding-bottom: 3pt; border-bottom: 0.5pt solid #c8ccd2;
+    page-break-after: avoid;
+  }
+  h2 .num { color: #8a9099; font-weight: 400; margin-right: 8pt; }
+  h3 {
+    font-size: 9.5pt; font-weight: 600; margin: 14pt 0 5pt 0;
+    page-break-after: avoid;
+  }
+  p { margin: 0 0 8pt 0; text-align: justify; hyphens: auto; }
+  ul, ol { margin: 0 0 8pt 0; padding-left: 16pt; }
+  li { margin-bottom: 3pt; }
+
+  /* ---------- tables ---------- */
+  table.data {
+    width: 100%; border-collapse: collapse; font-size: 8.5pt;
+    margin: 8pt 0 12pt 0; page-break-inside: avoid;
+  }
+  table.data th {
+    text-align: left; font-weight: 600; font-size: 7.5pt;
+    letter-spacing: 0.06em; text-transform: uppercase; color: #3c414a;
+    border-bottom: 0.9pt solid #16181d; padding: 4pt 8pt 4pt 0;
+  }
+  table.data td {
+    padding: 4pt 8pt 4pt 0; vertical-align: top;
+    border-bottom: 0.4pt solid #dfe2e6;
+  }
+  table.data tr:last-child td { border-bottom: 0.9pt solid #16181d; }
+  table.data td.n { white-space: nowrap; color: #5b6068; }
+  .sev { font-weight: 600; white-space: nowrap; }
+
+  code, .mono {
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 0.86em; background: #f4f5f7; padding: 0.5pt 2.5pt;
+    border-radius: 2px;
+  }
+  pre {
+    font-family: "DejaVu Sans Mono", "Liberation Mono", monospace;
+    font-size: 8pt; background: #f7f8fa; border-left: 2pt solid #c8ccd2;
+    padding: 7pt 10pt; margin: 8pt 0 12pt 0; overflow: hidden;
+    white-space: pre-wrap; line-height: 1.45;
+  }
+  pre code { background: none; padding: 0; }
+
+  /* ---------- figures ---------- */
+  figure { margin: 12pt 0 16pt 0; page-break-inside: avoid; }
+  figure img { width: 100%; border: 0.5pt solid #c8ccd2; display: block; }
+  figure.dialog img { height: 62mm; object-fit: cover; object-position: center 42%; }
+  figcaption {
+    font-size: 8pt; color: #4a4f57; margin-top: 5pt; line-height: 1.45;
+  }
+  figcaption b { color: #16181d; font-weight: 600; }
+
+  .callout {
+    border-left: 2pt solid #16181d; padding: 2pt 0 2pt 11pt;
+    margin: 10pt 0 12pt 0; font-size: 9.5pt;
+  }
+
+  .pagebreak { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="org">Async Tech Solutions &nbsp;·&nbsp; Odoo School Management Project</div>
+  <h1>QA and Integration Working Update</h1>
+  <p class="subtitle">Sprint delivery, Thursday 30 July 2026</p>
+</div>
+
+<table class="meta">
+  <tr><td>Intern</td><td>Dawit Worku</td></tr>
+  <tr><td>Workstream</td><td>Integration and QA lead — Integration Team and Security &amp; QA Team, brief §12</td></tr>
+  <tr><td>Repository</td><td>async-arch/Async_school_system.</td></tr>
+  <tr><td>Branch at submission</td><td>main @ ff88530</td></tr>
+  <tr><td>Test result</td><td>40 tests executed, 0 failed, 0 errors of 34 test methods</td></tr>
+  <tr><td>Pull requests merged</td><td>#11, #14, #15, #16, #17</td></tr>
+</table>
+
+<h2><span class="num">1</span>Role and scope</h2>
+
+<p>Section 12 of the brief assigns two workstreams to this role. The Integration Team owns
+attendance and mark-list teacher permissions, schedule links, relational consistency and
+regression testing. The Security and QA Team owns access groups, record rules, document
+privacy, conflict tests, cross-role tests, demo data, the bug log and final integration.</p>
+
+<p>In practice the work was to act as the gate on the protected branch: audit every incoming
+pull request against the brief, find and fix defects before they reached <code>main</code>,
+and build the security layer that the other workstreams' acceptance criteria depend on.
+Eighteen defects were logged across the sprint, sixteen of which are fixed.</p>
+
+<h2><span class="num">2</span>Principal finding</h2>
+
+<p>The security layer specified in section 11 did not exist. The file
+<code>security/school_security.xml</code> contained an empty <code>&lt;odoo/&gt;</code>
+element — no access groups and no record rules — and all eighteen access-control rows were
+bound to the generic <code>base.group_user</code> and <code>base.group_system</code>.</p>
+
+<p>This mattered because roughly a third of the non-negotiable acceptance criteria in section
+13 are statements about what a given role can and cannot see. None of them could be
+satisfied, and demonstration steps 11 through 15 in section 14 could not be performed at all.</p>
+
+<p>Two further modules named in section 2 as part of the existing foundation were also found
+to be hollow rather than merely incomplete.</p>
+
+<table class="data">
+  <tr><th>Module</th><th>State found</th></tr>
+  <tr>
+    <td>Mark List</td>
+    <td><code>models/school_mark.py</code> was a zero-byte file that was nonetheless imported by
+        the package. Its view file contained an empty <code>&lt;odoo/&gt;</code>. The model did
+        not exist.</td>
+  </tr>
+  <tr>
+    <td>Attendance</td>
+    <td>The model existed at 48 lines, but its view file was empty and no menu item pointed at
+        it, so the module was unreachable through the interface.</td>
+  </tr>
+</table>
+
+<h2><span class="num">3</span>Defect log</h2>
+
+<p>Severity is recorded as S1 where a defect blocks a stated acceptance criterion, S2 where it
+breaks a working flow, and S3 for hygiene and cosmetic issues.</p>
+
+<table class="data">
+  <tr><th style="width:4%">#</th><th style="width:7%">Sev</th><th>Defect</th><th style="width:20%">Found during</th><th style="width:11%">Status</th></tr>
+  <tr><td class="n">1</td><td class="sev">S1</td><td>No access groups or record rules; section 13 role isolation unsatisfiable</td><td>Pre-merge audit</td><td>Fixed</td></tr>
+  <tr><td class="n">2</td><td class="sev">S1</td><td>The <code>school.mark</code> model was absent entirely</td><td>Pre-merge audit</td><td>Fixed</td></tr>
+  <tr><td class="n">3</td><td class="sev">S1</td><td>Attendance had no views and no menu entry</td><td>Pre-merge audit</td><td>Fixed</td></tr>
+  <tr><td class="n">4</td><td class="sev">S1</td><td>Responsibility Assignment, a mandatory module, did not exist. Non-teaching staff could hold no responsibility, so responsibility-targeted announcements could never reach a Registrar or a Librarian</td><td>Brief re-audit</td><td>Fixed</td></tr>
+  <tr><td class="n">5</td><td class="sev">S1</td><td><code>school.teacher.name</code> was an independent character field, so renaming the staff master record did not propagate — a direct failure of the section 13 criterion on master-record renames</td><td>Brief re-audit</td><td>Fixed</td></tr>
+  <tr><td class="n">6</td><td class="sev">S1</td><td>Pull request #11 introduced three models with no access-control rows at all; every non-administrator would have hit an access error</td><td>PR #11 review</td><td>Fixed before merge</td></tr>
+  <tr><td class="n">7</td><td class="sev">S1</td><td>Staff and teacher required documents had no fields on either model</td><td>Brief re-audit</td><td>Fixed</td></tr>
+  <tr><td class="n">8</td><td class="sev">S2</td><td>The <code>staff_id</code> NOT NULL migration fails on any database that already holds teacher rows; Odoo logs the failure and silently leaves the column nullable</td><td>Post-merge upgrade, PR #14</td><td>Open</td></tr>
+  <tr><td class="n">9</td><td class="sev">S2</td><td>Demo data sat below the section 13 minimums, at three staff and two teachers against the required five and three</td><td>Acceptance-criteria check</td><td>Fixed</td></tr>
+  <tr><td class="n">10</td><td class="sev">S2</td><td>No student records existed in demo data, so attendance and marks could not be exercised at all and demonstration steps 13 and 15 dead-ended</td><td>Browser test preparation</td><td>Fixed</td></tr>
+  <tr><td class="n">11</td><td class="sev">S2</td><td>The administrator overview rendered every tile as zero against a database holding five active staff, caused by a blocked transient record and a compute with no field dependencies</td><td>Browser verification</td><td>Fixed</td></tr>
+  <tr><td class="n">12</td><td class="sev">S2</td><td>The test suite passed only against an empty database; nine of nine tests errored once real data existed because fixture values collided with seeded records</td><td>Post-seed test run</td><td>Fixed</td></tr>
+  <tr><td class="n">13</td><td class="sev">S2</td><td>The administrator password is not <code>admin</code> on databases created from the command line, so the documented login was wrong</td><td>Browser test pass</td><td>Fixed</td></tr>
+  <tr><td class="n">14</td><td class="sev">S3</td><td>Unsaved class schedules displayed <code>False - False ( 00:00)</code> in the breadcrumb</td><td>Browser verification</td><td>Fixed</td></tr>
+  <tr><td class="n">15</td><td class="sev">S3</td><td>Merge conflict in the manifest between pull request #11 and the main branch</td><td>PR #11 merge</td><td>Resolved</td></tr>
+  <tr><td class="n">16</td><td class="sev">S3</td><td>The manifest declared no licence key, producing an Odoo warning on every load</td><td>Install log review</td><td>Fixed</td></tr>
+  <tr><td class="n">17</td><td class="sev">S3</td><td>Two fields on <code>school.staff</code> shared the label "Responsibilities"</td><td>Upgrade log review</td><td>Fixed</td></tr>
+  <tr><td class="n">18</td><td class="sev">S3</td><td>Database credentials committed in a tracked configuration file, with the database manager left unprotected</td><td>Security review</td><td>Open</td></tr>
+</table>
+
+<div class="pagebreak"></div>
+
+<h2><span class="num">4</span>Integration decisions and their reasoning</h2>
+
+<p>Four decisions shaped the final implementation. Each is recorded here with its reasoning,
+because section 15 requires being able to explain the configuration shown.</p>
+
+<h3>Required fields enforced by constraint rather than by <code>required=True</code></h3>
+<p>Section 4 requires a name, phone, department, job title, responsibility and employment
+status on every staff record. Declaring these <code>required=True</code> adds a NOT NULL
+constraint to a column that already holds rows, which is precisely the migration that failed
+in defect 8. A Python constraint gating the move out of Draft gives the same guarantee without
+a migration that can fail on an existing database.</p>
+
+<h3>A control status added alongside employment status, not replacing it</h3>
+<p>Section 4 describes a control status of Draft, Active, Suspended, Inactive or Archived, and
+separately an employment status. Overwriting the existing selection would have silently
+reinterpreted data owned by the Staff Registration team. Two fields were kept, with two
+distinct meanings.</p>
+
+<h3>Documents and responsibilities added through inheritance in separate files</h3>
+<p>The Staff Registration and Teacher Registration teams' own model and view files were left
+untouched, so their in-flight pull requests would not conflict with the security work.</p>
+
+<h3>Record-rule domains reduced to plain attribute lookups</h3>
+<p>Odoo evaluates record-rule domains through <code>safe_eval</code>, which permits attribute
+access but not method calls, and which has no <code>datetime</code> in scope. Both limits were
+discovered during the first install attempt, which failed with
+<span class="mono">name 'datetime' is not defined</span>. Each user's scope is therefore
+precomputed onto fields on <code>res.users</code> so that every rule domain is a simple
+attribute lookup.</p>
+
+<div class="callout">
+  <p style="margin:0">One earlier assessment was withdrawn. Branch and campus targeting was
+  initially reported as not implementable, because nothing in the module modelled a campus. On
+  re-audit a small <code>school.campus</code> model made it straightforward, and all eight
+  audience types specified in section 8 now function.</p>
+</div>
+
+<h2><span class="num">5</span>Merge gatekeeping</h2>
+
+<table class="data">
+  <tr><th style="width:8%">PR</th><th style="width:26%">Subject</th><th style="width:14%">Author</th><th>Action taken</th></tr>
+  <tr><td class="n">#11</td><td>Teacher, subject and assignment models</td><td>team</td><td>Manifest conflict resolved and the six missing access-control rows added before the merge was allowed</td></tr>
+  <tr><td class="n">#14</td><td>Teacher to staff link, workload validation</td><td>mekhlua</td><td>Reviewed and merged with continuous integration green. The post-merge upgrade surfaced defect 8, which was reported rather than concealed</td></tr>
+  <tr><td class="n">#15</td><td>Program and class scheduling</td><td>self</td><td>Merged after integration and browser verification</td></tr>
+  <tr><td class="n">#16</td><td>Security, marks, announcements, dashboards</td><td>self</td><td>Merged after a full test run and three-role browser verification</td></tr>
+  <tr><td class="n">#17</td><td>Demo students, attendance and marks</td><td>self</td><td>Merged</td></tr>
+  <tr><td class="n">#9</td><td>Mark list</td><td>Jennah198</td><td><b>Held, not merged.</b> The branch is in conflict and now overlaps the <code>school.mark</code> model delivered in #16. Flagged for rebasing rather than conflict resolution</td></tr>
+</table>
+
+<h2><span class="num">6</span>Test evidence</h2>
+
+<pre><code>docker compose exec odoo odoo -c /etc/odoo/odoo.conf -d &lt;db&gt; -u school_management \
+  --test-enable --test-tags /school_management --no-http --stop-after-init
+
+school_management: 40 tests  0 failed  0 error(s) of 34 tests</code></pre>
+
+<p>The suite comprises 461 lines across three files and 34 test methods. It was verified clean
+against three separate conditions: a fresh installation with demo data, a fresh installation
+without demo data, and an upgrade applied to an existing populated database.</p>
+
+<table class="data">
+  <tr><th style="width:33%">File</th><th style="width:9%">Tests</th><th>Coverage</th></tr>
+  <tr>
+    <td><code>test_class_schedule.py</code></td><td class="n">9</td>
+    <td>Section 7.3 conflict validation — teacher, class and room double-booking; back-to-back
+        slots permitted; the same weekday in another term permitted; a cancelled slot releasing
+        its room; an unassigned teacher rejected; a weekday or date required; an inactive
+        teacher blocked from publication; a reason required when rescheduling</td>
+  </tr>
+  <tr>
+    <td><code>test_security.py</code></td><td class="n">12</td>
+    <td>Sections 9 and 13 isolation — a teacher sees attendance, marks and students only for
+        assigned classes and subjects; announcements aimed at another class or subject are
+        invisible; draft and expired announcements are invisible; staff documents raise an
+        access error below Registrar; a plain staff user sees no other staff records</td>
+  </tr>
+  <tr>
+    <td><code>test_responsibility.py</code></td><td class="n">13</td>
+    <td>Sections 4, 5 and 6 — a staff rename propagating to the teacher and the assignment
+        label; the Draft gate; suspended staff refused new assignments; deactivation disabling
+        the linked login; one primary responsibility per person; no self-reporting; one
+        homeroom teacher per class and term; responsibility and campus announcement targeting</td>
+  </tr>
+</table>
+
+<div class="pagebreak"></div>
+
+<h2><span class="num">7</span>Demonstration evidence</h2>
+
+<figure>
+  <img src="evidence/01-admin-overview.png" alt="School Administration Overview">
+  <figcaption><b>Figure 1 — Administrator overview, section 10.</b> Counts are read live from the
+  database and each tile opens the records behind it. Schedule conflicts read zero because the
+  create and write constraints reject clashes at source. This screen previously rendered every
+  tile as zero; that was defect 11. The sixth staff record was added during manual testing after
+  the demo data shipped with five.</figcaption>
+</figure>
+
+<figure class="dialog">
+  <img src="evidence/05-schedule-conflict.png" alt="Overlapping schedule rejected">
+  <figcaption><b>Figure 2 — Conflict validation, section 7.3.</b> An attempt to schedule Almaz
+  Tesfaye for Grade 2 A on Monday from 08:30 to 09:30 is rejected because she already teaches
+  Grade 1 A from 08:00 to 09:00. The message names the clashing record. This is a backend
+  constraint raised on create, not a user-interface warning, which section 7.3 states explicitly
+  is not sufficient on its own.</figcaption>
+</figure>
+
+<h3>Role isolation, section 13</h3>
+
+<p>The three figures below show the same menu, My Announcements, opened by three different
+users against the same database. Nothing about the view changes; only the record rules differ.</p>
+
+<figure>
+  <img src="evidence/02-teacher-maths-feed.png" alt="Mathematics teacher announcements">
+  <figcaption><b>Figure 3 — Mathematics teacher.</b> Sees the all-staff assembly notice and the
+  Grade 1 A parent visit, because she teaches that class. She does not see the laboratory
+  closure, which is targeted at General Science, nor the registration notice targeted at the
+  Registrar responsibility.</figcaption>
+</figure>
+
+<figure>
+  <img src="evidence/03-teacher-science-feed.png" alt="Science teacher announcements">
+  <figcaption><b>Figure 4 — Science teacher, the exact complement.</b> Sees the all-staff notice
+  and the urgent laboratory closure for General Science, and does not see the Grade 1 A parent
+  visit. The urgent item carries a visible priority indicator, as section 8 requires. This user
+  also holds Department Head, which is why the Analysis menu appears here and not in Figure 3.</figcaption>
+</figure>
+
+<figure>
+  <img src="evidence/04-registrar-feed.png" alt="Registrar announcements">
+  <figcaption><b>Figure 5 — Registrar, a non-teaching staff member.</b> Sees the registration
+  notice targeted at the Registrar responsibility, and neither class-targeted nor
+  subject-targeted item. This case was impossible before the Responsibility Assignment module
+  was built, because responsibility existed only on teaching assignments and a Registrar could
+  therefore hold none. It is the clearest evidence that defect 4 is closed.</figcaption>
+</figure>
+
+<h2><span class="num">8</span>Open defects and risks carried forward</h2>
+
+<h3>The staff link constraint is not enforced at database level on upgraded systems</h3>
+<p>Making <code>staff_id</code> required on a table that already held teacher rows fails.
+Odoo logs the failure and continues, leaving the column nullable. Fresh installations receive
+the constraint; upgraded ones do not, so on any existing database the link is enforced only by
+the object layer. The fix is a pre-initialisation migration that backfills existing rows before
+the constraint is applied. This belongs to the Teacher and Assignment workstream.</p>
+
+<h3>Database credentials are committed to the repository</h3>
+<p>The tracked configuration file carries both the database manager password and the database
+user password, and the ignore file does not cover it. With the manager unprotected, anyone able
+to reach the service port can drop or duplicate any database. Section 18 forbids committing
+database credentials. The remedy is to move both values into the ignored environment file and
+ship an example configuration in place of the real one. It was not done during the sprint
+because it changes how the stack starts for every intern.</p>
+
+<h3>Section, academic year and term are not modelled as records</h3>
+<p>Section 6 asks for relational fields to these. Section remains a character field on the class
+record, academic year a character field, and term a two-value selection. Everything keys off the
+class record, so the links stay internally consistent, but there is no master table for either
+concept. This is a schema change touching every workstream and was deliberately not attempted
+mid-sprint.</p>
+
+<h3>Two lesser items</h3>
+<p>Dated and recurring schedule slots are not cross-checked, so a one-off makeup class landing
+on a recurring weekday is not flagged; this is marked in the code with its upgrade path. There
+is also no approval workflow on attendance or marks, which remain direct entry.</p>
+
+<h3>A breaking change was shipped deliberately</h3>
+<p>Access-control rows no longer grant anything to the generic internal user group. Any existing
+user without a School Management role will see an empty application after upgrading. The Odoo
+administrator account is added to the School Administrator role automatically; every other
+account needs a role assigned. This will affect each intern's local database as soon as they
+pull the main branch, and the team should be told before the demonstration.</p>
+
+<h2><span class="num">9</span>Deliverables produced</h2>
+
+<ul>
+  <li>Role and permission matrix covering seven roles and their implication ladder</li>
+  <li>Status transition documentation for schedules, programs and announcements</li>
+  <li>A regression checklist of 24 rows spanning registration, attendance, marks, staff,
+      teacher, scheduling and role isolation</li>
+  <li>Conflict validation and access-control test evidence, as set out in section 6 above</li>
+  <li>A known-issues and incomplete-work list matching section 8 above</li>
+  <li>Installation and upgrade commands, including the command-line administrator password
+      caveat found as defect 13</li>
+  <li>Demonstration data covering five staff, three teachers, four students, two classes, three
+      subjects, five class periods, two programs, five announcements, eight attendance records,
+      eight marks, two campuses, three rooms and six role logins</li>
+</ul>
+
+<h2><span class="num">10</span>Recommended next actions</h2>
+
+<ol>
+  <li>Raise an issue for the staff link backfill migration before anyone upgrades another
+      populated database.</li>
+  <li>Notify the team about the access-control breaking change ahead of the demonstration.</li>
+  <li>Tell Jennah198 that pull request #9 needs rebasing onto the merged mark model rather than
+      a conflict resolution.</li>
+  <li>Decide as a team whether academic year and term become master tables. This is the last
+      structural gap against section 6.</li>
+  <li>Move the committed credentials out of the tracked configuration once the demonstration is
+      complete.</li>
+</ol>
+
+</body>
+</html>
