@@ -15,10 +15,11 @@
                 <field name="assessment_type"/>
                 <field name="max_mark"/>
                 <field name="score"/>
-                <field name="percentage" widget="percentage"/>
-                <field name="grade"/>
-                <field name="pass_fail" widget="badge" decoration-success="pass_fail == 'pass'" decoration-danger="pass_fail == 'fail'"/>
-                <field name="teacher_id"/>
+                <field name="max_score"/>
+                <field name="percentage" widget="percentage" readonly="1" optional="show"/>
+                <field name="grade" readonly="1"/>
+                <field name="academic_year" readonly="1" optional="hide"/>
+                <field name="recorded_by_id" optional="hide"/>
             </tree>
         </field>
     </record>
