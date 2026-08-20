@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="grading_policy_default" model="school.grading.policy">
+        <field name="name">Default A-F Grading</field>
+        <field name="pass_percentage">50</field>
+    </record>
+
+    <record id="grading_band_default_a" model="school.grading.band">
+        <field name="policy_id" ref="grading_policy_default"/>
+        <field name="sequence">10</field>
+        <field name="minimum_percentage">90</field>
+        <field name="letter_grade">A</field>
+        <field name="label">Excellent</field>
+    </record>
+    <record id="grading_band_default_b" model="school.grading.band">
+        <field name="policy_id" ref="grading_policy_default"/>
+        <field name="sequence">20</field>
+        <field name="minimum_percentage">80</field>
+        <field name="letter_grade">B</field>
+        <field name="label">Very Good</field>
+    </record>
+    <record id="grading_band_default_c" model="school.grading.band">
+        <field name="policy_id" ref="grading_policy_default"/>
+        <field name="sequence">30</field>
+        <field name="minimum_percentage">70</field>
+        <field name="letter_grade">C</field>
+        <field name="label">Good</field>
+    </record>
+    <record id="grading_band_default_d" model="school.grading.band">
+        <field name="policy_id" ref="grading_policy_default"/>
+        <field name="sequence">40</field>
+        <field name="minimum_percentage">60</field>
+        <field name="letter_grade">D</field>
+        <field name="label">Satisfactory</field>
+    </record>
+    <record id="grading_band_default_e" model="school.grading.band">
+        <field name="policy_id" ref="grading_policy_default"/>
+        <field name="sequence">50</field>
+        <field name="minimum_percentage">50</field>
+        <field name="letter_grade">E</field>
+        <field name="label">Pass</field>
+    </record>
+</odoo>

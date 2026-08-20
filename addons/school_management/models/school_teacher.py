@@ -23,7 +23,7 @@ class SchoolTeacher(models.Model):
     )
 
     staff_id = fields.Many2one('school.staff', string='Staff Record', required=True, ondelete='restrict',
-                                domain="[('active', '=', True), ('state', '=', 'active'), '|', ('department', '=', 'academic'), ('primary_responsibility', 'in', ['teacher', 'homeroom', 'department_head', 'coordinator'])]",
+                                domain="[('active', '=', True), ('state', '=', 'active'), ('employment_status', '=', 'active'), '|', ('department', '=', 'academic'), ('primary_responsibility', 'in', ['teacher', 'homeroom', 'department_head', 'coordinator'])]",
                                 help='Link to the official staff master record.')
 
     department = fields.Selection(
@@ -223,7 +223,8 @@ class SchoolTeacher(models.Model):
     def _check_staff_active(self):
         for rec in self:
             if rec.staff_id:
-                if not rec.staff_id.active or rec.staff_id.state != 'active':
+                if (not rec.staff_id.active or rec.staff_id.state != 'active' or
+                    rec.staff_id.employment_status != 'active'):
                     raise ValidationError('A teacher profile must be linked to an active staff record.')
                 if rec.staff_id.department != 'academic' and rec.staff_id.primary_responsibility not in ('teacher', 'homeroom', 'department_head', 'coordinator'):
                     raise ValidationError('Selected staff member must be a teacher or academic staff member.')

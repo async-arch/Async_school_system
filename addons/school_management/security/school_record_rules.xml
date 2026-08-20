@@ -255,10 +255,7 @@
         <field name="name">Marks: own class and subject only — Teacher</field>
         <field name="model_id" ref="model_school_mark"/>
         <field name="groups" eval="[(4, ref('school_management.group_school_teacher'))]"/>
-        <field name="domain_force">['&amp;',
-            ('class_id', 'in', user.school_taught_class_ids.ids),
-            ('subject_id', 'in', user.school_taught_subject_ids.ids)
-        ]</field>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
@@ -283,10 +280,7 @@
         <field name="name">Assessments: own class and subject only — Teacher</field>
         <field name="model_id" ref="model_school_assessment"/>
         <field name="groups" eval="[(4, ref('school_management.group_school_teacher'))]"/>
-        <field name="domain_force">['&amp;',
-            ('class_id', 'in', user.school_taught_class_ids.ids),
-            ('subject_id', 'in', user.school_taught_subject_ids.ids)
-        ]</field>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->

@@ -25,6 +25,23 @@
         <field name="target">new</field>
     </record>
 
+    <record id="view_school_assessment_return_form" model="ir.ui.view">
+        <field name="name">school.assessment.return.form</field>
+        <field name="model">school.assessment.return</field>
+        <field name="arch" type="xml">
+            <form string="Return Assessment for Correction">
+                <group>
+                    <field name="assessment_id" options="{'no_create': True}"/>
+                    <field name="reason" placeholder="Why this assessment is being returned."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Return for Correction" class="oe_highlight"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="view_school_assessment_tree" model="ir.ui.view">
         <field name="name">school.assessment.tree</field>
         <field name="model">school.assessment</field>
@@ -59,7 +76,7 @@
                             invisible="state != 'open'"/>
                     <button name="action_submit" type="object" string="Submit"
                             class="oe_highlight" invisible="state != 'open'"/>
-                    <button name="action_return" type="object" string="Return for Correction"
+                    <button name="action_open_return_wizard" type="object" string="Return for Correction"
                             invisible="state != 'submitted'"
                             groups="school_management.group_school_exam_officer"/>
                     <button name="action_approve" type="object" string="Approve"
@@ -82,20 +99,22 @@
                     <div class="oe_title">
                         <h1><field name="name" placeholder="e.g. Mid-term Exam"/></h1>
                     </div>
+                    <!-- naz -->
                     <group>
                         <group string="Scope">
-                            <field name="assessment_type"/>
-                            <field name="class_id" options="{'no_create': True}"/>
-                            <field name="subject_id" options="{'no_create': True}"/>
-                            <field name="term_id" options="{'no_create': True}"/>
+                            <field name="assessment_type" readonly="state != 'draft'"/>
+                            <field name="class_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="subject_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="term_id" options="{'no_create': True}" readonly="state != 'draft'"/>
                             <field name="academic_year_id"/>
                         </group>
                         <group string="Marking">
-                            <field name="date"/>
-                            <field name="max_mark"/>
-                            <field name="weight"/>
+                            <field name="date" readonly="state != 'draft'"/>
+                            <field name="max_mark" readonly="state != 'draft'"/>
+                            <field name="weight" readonly="state != 'draft'"/>
                         </group>
                     </group>
+
                     <group string="Mark List">
                         <field name="mark_ids" nolabel="1" colspan="2"
                                readonly="state not in ('draft', 'open')">

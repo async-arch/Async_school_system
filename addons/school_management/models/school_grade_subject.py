@@ -27,6 +27,10 @@ class SchoolGradeSubject(models.Model):
         ('compulsory', 'Compulsory'),
         ('optional', 'Optional'),
     ], string='Type', required=True, default='compulsory')
+    grading_policy_id = fields.Many2one(
+        'school.grading.policy', string='Grading Policy', ondelete='restrict',
+        help='Optional subject-specific grading policy. The default policy is used when empty.',
+    )
     active = fields.Boolean(string='Active', default=True)
 
     _sql_constraints = [

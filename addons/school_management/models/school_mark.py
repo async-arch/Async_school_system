@@ -2,10 +2,11 @@ from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 # Grade boundaries, highest first. First band whose floor the percentage reaches wins.
-GRADE_BANDS = [(90, 'A'), (80, 'B'), (70, 'C'), (60, 'D'), (50, 'E')]
+DEFAULT_GRADE_BANDS = [(90, 'A'), (80, 'B'), (70, 'C'), (60, 'D'), (50, 'E')]
+GRADE_BANDS = DEFAULT_GRADE_BANDS
 
 # BR-10: statuses that carry a countable score. Everything else renders no grade.
-SCORED_STATUSES = ('recorded', 'transfer')
+SCORED_STATUSES = ('recorded', 'transfer', 'makeup')
 
 # Fields a teacher fills in — editable only while the assessment is open.
 ENTRY_FIELDS = {'score', 'max_score', 'mark_status', 'note', 'student_id'}
@@ -24,6 +25,10 @@ class SchoolMark(models.Model):
         'school.student', string='Student', required=True, ondelete='restrict',
         domain="[('registration_status', '=', 'approved')]",
         help='Only approved student registrations can receive marks.',
+    )
+    student_subject_id = fields.Many2one(
+        'school.student.subject', string='Subject Enrollment',
+        ondelete='restrict', index=True,
     )
     # Snapshot of the class at recording time — a later transfer must not
     # rewrite mark history (same fix as attendance in 17.0.7.0.0).
@@ -81,7 +86,11 @@ class SchoolMark(models.Model):
         for rec in self:
             if rec.mark_status in SCORED_STATUSES:
                 rec.percentage = (rec.score / rec.max_score * 100) if rec.max_score else 0.0
-                rec.grade = next((g for floor, g in GRADE_BANDS if rec.percentage >= floor), 'F')
+                rec.grade = next(
+                    (grade for floor, grade in DEFAULT_GRADE_BANDS
+                     if rec.percentage >= floor),
+                    'F',
+                )
             else:
                 rec.percentage = 0.0
                 rec.grade = False
@@ -128,9 +137,19 @@ class SchoolMark(models.Model):
                 vals.setdefault('term_id', assessment.term_id.id)
                 vals.setdefault('exam_type', assessment.assessment_type)
                 vals.setdefault('max_score', assessment.max_mark)
-            if not vals.get('class_id'):
+                vals['class_id'] = assessment.class_id.id
+                if not vals.get('student_subject_id'):
+                    subject_enrollment = self.env['school.student.subject'].search([
+                        ('student_id', '=', vals['student_id']),
+                        ('class_id', '=', assessment.class_id.id),
+                        ('subject_id', '=', assessment.subject_id.id),
+                        ('state', '=', 'enrolled'),
+                    ], limit=1)
+                    if subject_enrollment:
+                        vals['student_subject_id'] = subject_enrollment.id
+            elif not vals.get('class_id'):
                 student = self.env['school.student'].browse(vals['student_id'])
-                vals['class_id'] = (assessment.class_id or student.class_id).id
+                vals['class_id'] = student.class_id.id
         return super().create(vals_list)
 
     def write(self, vals):

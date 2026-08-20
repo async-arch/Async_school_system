@@ -9,8 +9,19 @@ ASSESSMENT_TYPES = [
     ('final', 'Final Exam'),
 ]
 
+# Default max_mark/weight per assessment_type — pre-fills the form field,
+# stays editable per-assessment for exceptions (SRS §9.1 keeps these
+# configurable; this is convenience, not a hard constraint).
+TYPE_DEFAULTS = {
+    'quiz': (5.0, 1.0),
+    'assignment': (15.0, 3.0),
+    'test': (10.0, 2.0),
+    'midterm': (20.0, 4.0),
+    'final': (50.0, 5.0),
+}
+
 # Setup is frozen once the mark list exists: rows were derived from it.
-SETUP_FIELDS = {'class_id', 'subject_id', 'term_id', 'date', 'max_mark', 'assessment_type'}
+SETUP_FIELDS = {'class_id', 'subject_id', 'term_id', 'date', 'max_mark', 'assessment_type', 'weight'}
 
 
 class SchoolAssessment(models.Model):
@@ -65,15 +76,19 @@ class SchoolAssessment(models.Model):
         for rec in self:
             rec.mark_count = len(rec.mark_ids)
 
+    @api.onchange('assessment_type')
+    def _onchange_assessment_type(self):
+        if self.assessment_type in TYPE_DEFAULTS:
+            self.max_mark, self.weight = TYPE_DEFAULTS[self.assessment_type]
+
     def write(self, vals):
         if SETUP_FIELDS & vals.keys() and any(r.state != 'draft' for r in self):
             raise ValidationError(
                 'Assessment setup is frozen once the mark list is generated.')
-        # BR-11 / AC-13: only an Exam Officer moves a mark list past Submitted
-        # or reopens one, whichever path the write arrives through.
-        if vals.get('state') in ('approved', 'locked', 'published'):
+        new_state = vals.get('state')
+        if new_state in ('approved', 'locked', 'published'):
             self._require_exam_officer()
-        if vals.get('state') == 'open' and any(
+        if new_state == 'open' and any(
                 r.state not in ('draft', 'open') for r in self):
             self._require_exam_officer()
         return super().write(vals)
@@ -91,12 +106,18 @@ class SchoolAssessment(models.Model):
 
     def _check_teacher_assigned(self):
         """BR-05: no mark list without an active teacher subject assignment."""
+        Assignment = self.env['school.teacher.assignment']
         for rec in self:
-            assigned = self.env['school.teacher.assignment'].search_count([
+            domain = [
+                ('active', '=', True),
                 ('subject_id', '=', rec.subject_id.id),
                 ('class_id', '=', rec.class_id.id),
-                ('term_id', '=', rec.term_id.id),
-            ])
+            ]
+            if hasattr(Assignment, 'term_id'):
+                domain.append(('term_id', '=', rec.term_id.id))
+            if hasattr(Assignment, 'academic_year_id'):
+                domain.append(('academic_year_id', '=', rec.academic_year_id.id))
+            assigned = Assignment.search_count(domain)
             if not assigned:
                 raise ValidationError(
                     f'{rec.subject_id.name} has no teacher assigned for '
@@ -125,9 +146,11 @@ class SchoolAssessment(models.Model):
             vals_list.append({
                 'assessment_id': self.id,
                 'student_id': line.student_id.id,
+                'student_subject_id': line.id,
                 'mark_status': 'pending',
             })
         self.env['school.mark'].create(vals_list)
+
 
     def action_open(self):
         for rec in self:
@@ -144,12 +167,36 @@ class SchoolAssessment(models.Model):
                 raise ValidationError('Only open assessments can be regenerated.')
             rec._generate_mark_list()
 
+    # naz
     def action_submit(self):
         self._transition('open', 'submitted')
 
-    def action_return(self):
+    def action_open_return_wizard(self):
+        """Button target — opens the reason-prompt wizard. The actual state
+        change happens in action_return(), called from the wizard."""
+        self.ensure_one()
+        if self.state != 'submitted':
+            raise ValidationError('Only submitted assessments can be returned.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Return for Correction',
+            'res_model': 'school.assessment.return',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_assessment_id': self.id},
+        }
+
+    def action_return(self, reason):
+        """Returns a submitted assessment to open, with a required reason
+        posted to the chatter (SRS §9.4) — distinguishes a bounced-back
+        assessment from one that was simply never submitted."""
         self._require_exam_officer()
-        self._transition('submitted', 'open')
+        for rec in self:
+            if rec.state != 'submitted':
+                raise ValidationError(
+                    'Only submitted assessments can be returned.')
+            rec.message_post(body='Returned for correction: %s' % reason)
+            rec.state = 'open'
 
     def action_approve(self):
         self._transition('submitted', 'approved')
@@ -187,3 +234,17 @@ class SchoolAssessmentUnlock(models.TransientModel):
             raise ValidationError('This assessment is not locked.')
         assessment.message_post(body='Unlocked for correction: %s' % self.reason)
         assessment.state = 'open'
+
+class SchoolAssessmentReturn(models.TransientModel):
+    """Thin UI wrapper — action_confirm just calls the real method."""
+    _name = 'school.assessment.return'
+    _description = 'Return Assessment for Correction'
+
+    assessment_id = fields.Many2one(
+        'school.assessment', string='Assessment', required=True,
+        domain=[('state', '=', 'submitted')])
+    reason = fields.Text(string='Reason', required=True)
+
+    def action_confirm(self):
+        self.ensure_one()
+        self.assessment_id.action_return(self.reason)

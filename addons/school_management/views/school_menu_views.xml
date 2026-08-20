@@ -102,12 +102,39 @@
               groups="school_management.group_school_registrar,school_management.group_school_exam_officer"
               sequence="20"/>
 
+    <menuitem id="menu_school_assessment_marks"
+              name="Assessments &amp; Marks"
+              parent="menu_school_registrar"
+              groups="school_management.group_school_registrar,school_management.group_school_exam_officer,school_management.group_school_director"
+              sequence="32"/>
+
     <menuitem id="menu_school_assessment"
               name="Assessments"
-              parent="menu_school_registrar"
+              parent="menu_school_assessment_marks"
               action="action_school_assessment"
               groups="school_management.group_school_registrar,school_management.group_school_exam_officer"
               sequence="33"/>
+
+    <menuitem id="menu_school_report_cards"
+              name="Report Cards"
+              parent="menu_school_assessment_marks"
+              action="action_school_report_card"
+              groups="school_management.group_school_registrar,school_management.group_school_exam_officer,school_management.group_school_director"
+              sequence="34"/>
+
+    <menuitem id="menu_school_grading_policy"
+              name="Grading Policies"
+              parent="menu_school_registrar"
+              action="action_school_grading_policy"
+              groups="school_management.group_school_registrar,school_management.group_school_exam_officer,school_management.group_school_director"
+              sequence="35"/>
+
+    <menuitem id="menu_school_subject_results"
+              name="Subject Results"
+              parent="menu_school_analysis"
+              action="action_school_subject_result"
+              groups="school_management.group_school_director,school_management.group_school_exam_officer"
+              sequence="40"/>
 
     <menuitem id="menu_school_student"
               name="Students"

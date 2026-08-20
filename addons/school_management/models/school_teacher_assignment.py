@@ -67,12 +67,15 @@ class SchoolTeacherAssignment(models.Model):
 
     @api.constrains('teacher_id')
     def _check_staff_can_take_work(self):
-        """Brief section 4: suspended or inactive staff take no new assignments."""
+        """Only active staff take new assignments — anyone on leave, resigned,
+        terminated, or retired is blocked."""
         for rec in self:
-            state = rec.teacher_id.staff_id.state
-            if state in ('suspended', 'inactive', 'archived'):
+            staff = rec.teacher_id.staff_id
+            status = staff.employment_status
+            if staff.state != 'active' or status != 'active':
                 raise ValidationError(
-                    f'{rec.teacher_id.name} is {state} as a staff member and cannot '
+                    f'{rec.teacher_id.name} is not operationally active as a staff '
+                    f'member ({staff.state}, {status.replace("_", " ")}) and cannot '
                     'receive new assignments.'
                 )
 

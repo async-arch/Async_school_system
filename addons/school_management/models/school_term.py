@@ -1,4 +1,5 @@
-from odoo import fields, models
+from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class SchoolTerm(models.Model):
@@ -10,11 +11,19 @@ class SchoolTerm(models.Model):
 
     name = fields.Char(string='Term', required=True)
     sequence = fields.Integer(string='Sequence', default=10)
+    start_date = fields.Date(string='Start Date')
+    end_date = fields.Date(string='End Date')
     active = fields.Boolean(string='Active', default=True)
 
     _sql_constraints = [
         ('name_unique', 'unique(name)', 'That term already exists.'),
     ]
+
+    @api.constrains('start_date', 'end_date')
+    def _check_dates(self):
+        for rec in self:
+            if rec.start_date and rec.end_date and rec.end_date < rec.start_date:
+                raise ValidationError('Term end date cannot be before its start date.')
 
 
 class SchoolSection(models.Model):

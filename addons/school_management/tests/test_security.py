@@ -37,6 +37,7 @@ class TestSchoolSecurity(TransactionCase):
         self.teacher_b = self._teacher('SEC Teacher B', self._user('sec_teacher_b', 'group_school_teacher'))
         self._assign(self.teacher_a, self.math, self.class_a)
         self._assign(self.teacher_b, self.history, self.class_b)
+        self._assign(self.teacher_b, self.history, self.class_a)
 
         self.student_a = self._student('SEC Student A', self.class_a)
         self.student_b = self._student('SEC Student B', self.class_b)
@@ -112,6 +113,13 @@ class TestSchoolSecurity(TransactionCase):
             'student_id': student.id, 'score': 70.0,
         })
 
+    def _assessment(self, school_class, subject, name):
+        return self.env['school.assessment'].create({
+            'name': name, 'assessment_type': 'test',
+            'class_id': school_class.id, 'subject_id': subject.id,
+            'term_id': self._term().id, 'state': 'open',
+        })
+
     def _attendance(self, student):
         return self.env['school.attendance'].create({
             'student_id': student.id, 'date': '2026-08-03', 'status': 'present',
@@ -138,6 +146,31 @@ class TestSchoolSecurity(TransactionCase):
         self._mark(self.student_b, self.history)
         visible = self.env['school.mark'].with_user(self.teacher_user).search([])
         self.assertEqual(visible.student_id, self.student_a)
+
+    def test_teacher_pair_scope_blocks_cross_pair_marks_and_assessments(self):
+        own_assessment = self._assessment(self.class_a, self.math, 'SEC Own Pair')
+        cross_assessment = self._assessment(self.class_a, self.history, 'SEC Cross Pair')
+        own_mark = self.env['school.mark'].create({
+            'assessment_id': own_assessment.id, 'student_id': self.student_a.id, 'score': 70.0,
+        })
+        cross_mark = self.env['school.mark'].create({
+            'assessment_id': cross_assessment.id, 'student_id': self.student_a.id, 'score': 70.0,
+        })
+        visible_assessments = self.env['school.assessment'].with_user(self.teacher_user).search([])
+        visible_marks = self.env['school.mark'].with_user(self.teacher_user).search([])
+        self.assertIn(own_assessment, visible_assessments)
+        self.assertNotIn(cross_assessment, visible_assessments)
+        self.assertIn(own_mark, visible_marks)
+        self.assertNotIn(cross_mark, visible_marks)
+
+    def test_teacher_without_active_assignments_sees_no_assessments_or_marks(self):
+        user = self._user('sec_teacher_unassigned', 'group_school_teacher')
+        assessment = self._assessment(self.class_a, self.math, 'SEC Assigned Pair')
+        mark = self.env['school.mark'].create({
+            'assessment_id': assessment.id, 'student_id': self.student_a.id, 'score': 70.0,
+        })
+        self.assertFalse(self.env['school.assessment'].with_user(user).search([]))
+        self.assertFalse(self.env['school.mark'].with_user(user).search([]))
 
     def test_teacher_sees_students_only_for_assigned_classes(self):
         visible = self.env['school.student'].with_user(self.teacher_user).search([])
