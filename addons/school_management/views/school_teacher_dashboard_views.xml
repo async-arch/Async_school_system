@@ -27,6 +27,12 @@
                                 icon="fa-line-chart">
                             <field name="assigned_subject_count" widget="statinfo" string="Mark List"/>
                         </button>
+                        <button name="action_open_announcements"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-bullhorn">
+                            <field name="announcement_count" widget="statinfo" string="Announcements"/>
+                        </button>
                     </div>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
@@ -46,12 +52,12 @@
                     <notebook>
                         <page string="My Assigned Classes &amp; Subjects">
                             <field name="assignment_ids" readonly="1">
-                                <tree>
+                                <list>
                                     <field name="class_id"/>
                                     <field name="subject_id"/>
                                     <field name="weekly_periods"/>
                                     <field name="active"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                     </notebook>
@@ -64,7 +70,7 @@
     <record id="action_school_teacher_dashboard_list" model="ir.actions.act_window">
         <field name="name">Dashboard</field>
         <field name="res_model">school.teacher</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="view_id" ref="view_school_teacher_dashboard_form"/>
         <field name="domain">[("user_id", "=", uid)]</field>
     </record>

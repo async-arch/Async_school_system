@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_school_day_builder_form" model="ir.ui.view">
+        <field name="name">school.day.builder.form</field>
+        <field name="model">school.day.builder</field>
+        <field name="arch" type="xml">
+            <form string="Build a Day">
+                <div class="alert alert-warning" role="alert" invisible="not setup_warning">
+                    <field name="setup_warning" nolabel="1" readonly="1"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="academic_year_id" invisible="1"/>
+                        <field name="schedulable_subject_ids" invisible="1"/>
+                        <field name="class_id" options="{'no_create': True}"/>
+                        <field name="term_id" options="{'no_create': True}"/>
+                        <field name="day_of_week"/>
+                        <field name="repeat_day_ids" widget="many2many_tags"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="first_start_time" widget="float_time"/>
+                        <field name="period_minutes"/>
+                        <field name="break_minutes"/>
+                        <field name="default_room_id" options="{'no_create': True}"/>
+                        <field name="state"/>
+                    </group>
+                </group>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="sequence" widget="handle"/>
+                        <field name="subject_id" options="{'no_create': True}"
+                               domain="[('id', 'in', parent.schedulable_subject_ids)]"/>
+                        <field name="teacher_id"/>
+                        <field name="start_time" widget="float_time" readonly="1"/>
+                        <field name="end_time" widget="float_time" readonly="1"/>
+                        <field name="room_id" options="{'no_create': True}"/>
+                        <field name="schedule_type" optional="hide"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_build" type="object" string="Create Periods"
+                            class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_day_builder" model="ir.actions.act_window">
+        <field name="name">Build a Day</field>
+        <field name="res_model">school.day.builder</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_school_class_schedule_tree_builder" model="ir.ui.view">
+        <field name="name">school.class.schedule.tree.builder</field>
+        <field name="model">school.class.schedule</field>
+        <field name="inherit_id" ref="view_school_class_schedule_tree"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <header>
+                    <button name="%(action_school_day_builder)d" type="action"
+                            string="New" class="btn-primary" display="always"
+                            groups="school_management.group_school_admin,school_management.group_school_registrar"/>
+                </header>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_class_form_timetable_builder" model="ir.ui.view">
+        <field name="name">school.class.form.timetable.builder</field>
+        <field name="model">school.class</field>
+        <field name="inherit_id" ref="view_school_class_form"/>
+        <field name="arch" type="xml">
+            <button name="action_open_timetable" position="after">
+                <button name="%(action_school_day_builder)d" type="action"
+                        string="Add Periods" invisible="not id"
+                        context="{'default_class_id': id}"/>
+            </button>
+        </field>
+    </record>
+
+</odoo>

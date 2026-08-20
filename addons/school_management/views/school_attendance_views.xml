@@ -4,7 +4,7 @@
         <field name="name">school.attendance.tree</field>
         <field name="model">school.attendance</field>
         <field name="arch" type="xml">
-            <tree editable="bottom" decoration-danger="status == 'absent'"
+            <list editable="bottom" decoration-danger="status == 'absent'"
                   decoration-warning="status == 'late'"
                   decoration-muted="status == 'not_recorded'">
                 <field name="date"/>
@@ -13,7 +13,7 @@
                 <field name="enrollment_id" readonly="1" optional="hide"/>
                 <field name="status"/>
                 <field name="note" optional="show"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -25,7 +25,7 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="student_id"/>
+                            <field name="student_id" options="{'no_create': True}"/>
                             <field name="class_id" readonly="1"/>
                             <field name="enrollment_id" readonly="1"/>
                         </group>
@@ -56,7 +56,7 @@
                 <filter string="Present" name="present" domain="[('status', '=', 'present')]"/>
                 <filter string="Absent" name="absent" domain="[('status', '=', 'absent')]"/>
                 <filter string="Late" name="late" domain="[('status', '=', 'late')]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Class" name="group_class" context="{'group_by': 'class_id'}"/>
                     <filter string="Student" name="group_student" context="{'group_by': 'student_id'}"/>
                     <filter string="Status" name="group_status" context="{'group_by': 'status'}"/>
@@ -93,7 +93,7 @@
     <record id="action_school_attendance" model="ir.actions.act_window">
         <field name="name">Attendance</field>
         <field name="res_model">school.attendance</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_today': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">

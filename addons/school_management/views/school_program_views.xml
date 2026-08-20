@@ -4,7 +4,7 @@
         <field name="name">school.program.tree</field>
         <field name="model">school.program</field>
         <field name="arch" type="xml">
-            <tree decoration-muted="state == 'cancelled'">
+            <list decoration-muted="state == 'cancelled'">
                 <field name="name"/>
                 <field name="program_type"/>
                 <field name="audience_type"/>
@@ -15,7 +15,7 @@
                 <field name="state" widget="badge"
                        decoration-success="state == 'published'"
                        decoration-danger="state == 'cancelled'"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -78,10 +78,7 @@
                         </page>
                     </notebook>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -116,7 +113,7 @@
                         domain="[('start_datetime', '&gt;=', datetime.datetime.now().strftime('%Y-%m-%d 00:00:00'))]"/>
                 <separator/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Program Type" name="group_type" context="{'group_by': 'program_type'}"/>
                     <filter string="Audience" name="group_audience" context="{'group_by': 'audience_type'}"/>
                     <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
@@ -129,7 +126,7 @@
     <record id="action_school_program" model="ir.actions.act_window">
         <field name="name">Programs</field>
         <field name="res_model">school.program</field>
-        <field name="view_mode">tree,calendar,form</field>
+        <field name="view_mode">list,calendar,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first school program.

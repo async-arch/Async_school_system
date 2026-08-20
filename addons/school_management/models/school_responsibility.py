@@ -40,9 +40,19 @@ class SchoolCampus(models.Model):
     address = fields.Text(string='Address')
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('campus_name_unique', 'unique(name)', 'This branch or campus already exists.'),
-    ]
+    _campus_name_unique = models.Constraint(
+        'unique(name)',
+        'This branch or campus already exists.',
+    )
+
+
+class SchoolJobTitleResponsibility(models.Model):
+    _inherit = 'school.job.title'
+
+    responsibility = fields.Selection(
+        RESPONSIBILITIES, string='Grants Responsibility',
+        help='Primary responsibility seeded on staff who hold this job title.',
+    )
 
 
 class SchoolStaffResponsibility(models.Model):
@@ -75,14 +85,14 @@ class SchoolStaffResponsibility(models.Model):
     end_date = fields.Date(string='Effective To', tracking=True)
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('responsibility_unique',
-         'unique(staff_id, responsibility, department, start_date)',
-         'This staff member already holds that responsibility from the same date.'),
-        ('responsibility_dates_valid',
-         'CHECK(end_date IS NULL OR end_date >= start_date)',
-         'The effective-to date cannot be before the effective-from date.'),
-    ]
+    _responsibility_unique = models.Constraint(
+        'unique(staff_id, responsibility, department, start_date)',
+        'This staff member already holds that responsibility from the same date.',
+    )
+    _responsibility_dates_valid = models.Constraint(
+        'CHECK(end_date IS NULL OR end_date >= start_date)',
+        'The effective-to date cannot be before the effective-from date.',
+    )
 
     @api.depends('staff_id', 'responsibility')
     def _compute_display_name(self):
@@ -146,6 +156,20 @@ class SchoolStaffResponsibilityLink(models.Model):
         ('inactive', 'Inactive'),
         ('archived', 'Archived'),
     ], string='Status', default='draft', required=True, tracking=True)
+    missing_to_activate = fields.Char(
+        string='Still Missing', compute='_compute_missing_to_activate',
+    )
+
+    @api.onchange('job_title_id')
+    def _onchange_job_title_id(self):
+        if not self.job_title_id.responsibility or self.responsibility_ids.filtered('active'):
+            return
+        self.responsibility_ids = [(0, 0, {
+            'responsibility': self.job_title_id.responsibility,
+            'is_primary': True,
+            'department': self.department,
+            'start_date': fields.Date.context_today(self),
+        })]
 
     @api.depends('responsibility_ids.is_primary', 'responsibility_ids.responsibility',
                  'responsibility_ids.active')
@@ -154,7 +178,11 @@ class SchoolStaffResponsibilityLink(models.Model):
             primary = rec.responsibility_ids.filtered(lambda r: r.is_primary and r.active)
             rec.primary_responsibility = primary[:1].responsibility or False
 
+    @api.depends('responsibility_ids')
     def _compute_related_counts(self):
+        """Only the responsibility count can be tracked by a dependency; the other
+        three are searches on models that do not point back here, so they are
+        recomputed whenever the form is reloaded."""
         for rec in self:
             rec.responsibility_count = len(rec.responsibility_ids)
             rec.teacher_count = self.env['school.teacher'].search_count([('staff_id', '=', rec.id)])
@@ -163,30 +191,40 @@ class SchoolStaffResponsibilityLink(models.Model):
                 '|', ('staff_ids', 'in', rec.ids), ('audience_type', '=', 'all_staff'),
             ])
 
-    @api.constrains('first_name', 'last_name', 'phone', 'department', 'job_title_id',
-                    'employment_status', 'state', 'responsibility_ids')
+    def _missing_registration_fields(self):
+        self.ensure_one()
+        checks = (
+            (self.first_name, 'First Name'),
+            (self.last_name, 'Last Name'),
+            # Without this, the minimum-age rule only applies to whoever chooses to
+            # fill the field, and a staff member can be activated with no age ever
+            # checked. Only the roles that may read a birth date can activate staff,
+            # so requiring it here does not ask anyone for a field they cannot see.
+            (self.date_of_birth, 'Date of Birth'),
+            (self.phone, 'Primary Phone'),
+            (self.department, 'Department'),
+            (self.job_title_id, 'Job Title'),
+            (self.employment_status, 'Employment Status'),
+            (self.responsibility_ids.filtered('active'), 'at least one active Responsibility'),
+        )
+        return [label for value, label in checks if not value]
+
+    @api.depends('first_name', 'last_name', 'date_of_birth', 'phone', 'department',
+                 'job_title_id', 'employment_status', 'responsibility_ids',
+                 'responsibility_ids.active')
+    def _compute_missing_to_activate(self):
+        for rec in self:
+            rec.missing_to_activate = ', '.join(rec._missing_registration_fields())
+
+    @api.constrains('first_name', 'last_name', 'date_of_birth', 'phone', 'department',
+                    'job_title_id', 'employment_status', 'state', 'responsibility_ids')
     def _check_required_registration_fields(self):
-        """Brief section 4 requires these. Enforced as a constraint rather than
-        required=True so the column stays nullable and the upgrade does not fail on
-        rows that predate the rule."""
+        """Enforced as a constraint rather than required=True so the column stays
+        nullable and the upgrade does not fail on rows that predate the rule."""
         for rec in self:
             if rec.state == 'draft':
                 continue
-            missing = []
-            if not rec.first_name:
-                missing.append('First Name')
-            if not rec.last_name:
-                missing.append('Last Name')
-            if not rec.phone:
-                missing.append('Primary Phone')
-            if not rec.department:
-                missing.append('Department')
-            if not rec.job_title_id:
-                missing.append('Job Title')
-            if not rec.employment_status:
-                missing.append('Employment Status')
-            if not rec.responsibility_ids.filtered('active'):
-                missing.append('at least one active Responsibility')
+            missing = rec._missing_registration_fields()
             if missing:
                 raise ValidationError(
                     'Cannot leave Draft while the following are missing: %s'
@@ -200,6 +238,10 @@ class SchoolStaffResponsibilityLink(models.Model):
                 raise ValidationError('A staff member cannot report to themselves.')
 
     def action_activate(self):
+        for rec in self:
+            if not rec.staff_id:
+                rec.staff_id = self.env['ir.sequence'].next_by_code('school.staff') or 'New'
+        self._ensure_employee()
         self.write({'state': 'active'})
         teachers = self.env['school.teacher'].search([('staff_id', 'in', self.ids)])
         if teachers:
@@ -239,7 +281,7 @@ class SchoolStaffResponsibilityLink(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Responsibilities',
             'res_model': 'school.staff.responsibility',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('staff_id', '=', self.id)],
             'context': {'default_staff_id': self.id},
         }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_school_report_card" model="ir.actions.report">
+        <field name="name">Student Report Card</field>
+        <field name="model">school.report.card</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_school_report_card</field>
+        <field name="report_file">school_management.report_school_report_card</field>
+        <field name="print_report_name">'Report Card - %s' % object.name</field>
+    </record>
+    <template id="report_school_report_card">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="card">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Student Report Card</h2>
+                        <p><strong>Student:</strong> <span t-field="card.student_id.name"/></p>
+                        <p><strong>Class:</strong> <span t-field="card.class_id"/> · <strong>Term:</strong> <span t-field="card.term_id"/> · <strong>Version:</strong> <span t-field="card.version"/></p>
+                        <table class="table table-sm">
+                            <thead><tr><th>Subject</th><th>Raw</th><th>Maximum</th><th>Percentage</th><th>Grade</th><th>Result</th></tr></thead>
+                            <tbody><tr t-foreach="card.result_snapshot" t-as="line"><td><t t-out="line['subject']"/></td><td><t t-out="line['raw_total']"/></td><td><t t-out="line['maximum_total']"/></td><td><t t-out="'%.2f' % line['percentage']"/>%</td><td><t t-out="line['grade']"/></td><td><t t-out="'Pass' if line['pass'] else 'Fail'"/></td></tr></tbody>
+                        </table>
+                        <p><strong>Overall average:</strong> <span t-field="card.overall_average"/>% · <strong>Result:</strong> <span t-field="card.result"/></p>
+                        <p><strong>Approved by:</strong> <span t-field="card.approved_by_id"/> <span t-field="card.approved_at"/></p>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

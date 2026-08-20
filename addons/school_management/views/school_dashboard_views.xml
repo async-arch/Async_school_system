@@ -78,34 +78,34 @@
     <record id="action_school_dashboard_results" model="ir.actions.act_window">
         <field name="name">Results Analysis</field>
         <field name="res_model">school.mark</field>
-        <field name="view_mode">graph,pivot,tree,form</field>
+        <field name="view_mode">graph,pivot,list,form</field>
         <field name="context">{'search_default_group_subject': 1}</field>
     </record>
 
     <record id="action_school_dashboard_attendance" model="ir.actions.act_window">
         <field name="name">Attendance Analysis</field>
         <field name="res_model">school.attendance</field>
-        <field name="view_mode">graph,pivot,tree,form</field>
+        <field name="view_mode">graph,pivot,list,form</field>
         <field name="context">{'search_default_this_month': 1}</field>
     </record>
 
     <record id="action_school_dashboard_workload" model="ir.actions.act_window">
         <field name="name">Teacher Workload</field>
         <field name="res_model">school.teacher.assignment</field>
-        <field name="view_mode">graph,pivot,tree,form</field>
+        <field name="view_mode">graph,pivot,list,form</field>
     </record>
 
     <record id="action_school_dashboard_schedule_load" model="ir.actions.act_window">
         <field name="name">Schedule Coverage</field>
         <field name="res_model">school.class.schedule</field>
-        <field name="view_mode">graph,tree,calendar,form</field>
+        <field name="view_mode">graph,list,calendar,form</field>
         <field name="context">{'search_default_published': 1}</field>
     </record>
 
     <record id="action_school_my_timetable" model="ir.actions.act_window">
         <field name="name">My Timetable</field>
         <field name="res_model">school.class.schedule</field>
-        <field name="view_mode">tree,calendar,form</field>
+        <field name="view_mode">list,calendar,form</field>
         <field name="context">{'search_default_group_day': 1, 'search_default_published': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -117,14 +117,23 @@
     <record id="action_school_my_attendance_tasks" model="ir.actions.act_window">
         <field name="name">Attendance Entry</field>
         <field name="res_model">school.attendance</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_today': 1, 'search_default_group_class': 1}</field>
     </record>
 
     <record id="action_school_my_mark_tasks" model="ir.actions.act_window">
         <field name="name">Mark Entry</field>
-        <field name="res_model">school.mark</field>
-        <field name="view_mode">tree,form</field>
+        <field name="res_model">school.assessment</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_group_class': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create an assessment to enter marks.
+            </p>
+            <p>
+                Choose the class, subject, term, and exact teacher assignment,
+                then use Open &amp; Generate List to load the eligible students.
+            </p>
+        </field>
     </record>
 </odoo>

@@ -12,7 +12,9 @@ class TestEnrollment(TransactionCase):
 
     def setUp(self):
         super().setUp()
-        self.year = self.env['school.academic.year'].create({'name': '2098/2099'})
+        self.year = self.env['school.academic.year'].create({
+            'name': '2098/2099',
+            'date_start': '2098-09-01', 'date_end': '2099-06-30'})
         self.klass = self.env['school.class'].create({
             'name': 'ENR Grade 1',
             'academic_year_id': self.year.id,
@@ -27,6 +29,7 @@ class TestEnrollment(TransactionCase):
             'guardian_name': 'Guardian of %s' % name,
             'guardian_phone': '+251911223344',
             'class_id': self.klass.id,
+            'academic_year_id': self.year.id,
             'birth_certificate': DUMMY_FILE,
             # The registration constraint re-validates on any class change of an
             # approved student, and the transfer target below is not entry-level.
@@ -48,6 +51,21 @@ class TestEnrollment(TransactionCase):
         self.assertEqual(enrollment.academic_year_id, self.year)
         self.assertEqual(enrollment.roll_number, 1)
         self.assertTrue(enrollment.name.startswith('ENR-'))
+
+    def test_registration_class_must_belong_to_selected_year(self):
+        other_year = self.env['school.academic.year'].create({
+            'name': '2099/2100',
+            'date_start': '2099-09-01', 'date_end': '2100-06-30'})
+        with self.assertRaisesRegex(ValidationError, 'selected academic year'):
+            self.env['school.student'].create({
+                'name': 'ENR Wrong Year',
+                'date_of_birth': '2091-01-01',
+                'guardian_name': 'Guardian',
+                'guardian_phone': '+251911223399',
+                'class_id': self.klass.id,
+                'academic_year_id': other_year.id,
+                'birth_certificate': DUMMY_FILE,
+            })
 
     def test_rolls_are_sequential_per_class(self):
         first = self._approved('ENR Student One')

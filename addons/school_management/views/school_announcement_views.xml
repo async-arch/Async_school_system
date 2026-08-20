@@ -4,7 +4,7 @@
         <field name="name">school.announcement.tree</field>
         <field name="model">school.announcement</field>
         <field name="arch" type="xml">
-            <tree decoration-bf="priority == '2'" decoration-muted="state == 'archived'">
+            <list decoration-bf="priority == '2'" decoration-muted="state == 'archived'">
                 <field name="priority" widget="priority" optional="show"/>
                 <field name="name"/>
                 <field name="category"/>
@@ -16,7 +16,7 @@
                 <field name="state" widget="badge"
                        decoration-success="state == 'published'"
                        decoration-muted="state == 'archived'"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -28,7 +28,7 @@
                 <field name="priority"/>
                 <field name="state"/>
                 <templates>
-                    <t t-name="kanban-box">
+                    <t t-name="card">
                         <div t-attf-class="oe_kanban_global_click">
                             <div class="o_kanban_record_top">
                                 <div class="o_kanban_record_headings">
@@ -134,10 +134,7 @@
                         </page>
                     </notebook>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -160,7 +157,7 @@
                         domain="[('expiry_datetime', '!=', False), ('expiry_datetime', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <separator/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Category" name="group_category" context="{'group_by': 'category'}"/>
                     <filter string="Audience" name="group_audience" context="{'group_by': 'audience_type'}"/>
                     <filter string="Priority" name="group_priority" context="{'group_by': 'priority'}"/>
@@ -173,7 +170,7 @@
     <record id="action_school_announcement" model="ir.actions.act_window">
         <field name="name">Announcements</field>
         <field name="res_model">school.announcement</field>
-        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Publish an announcement to a targeted staff audience.
@@ -184,7 +181,7 @@
     <record id="action_school_announcement_feed" model="ir.actions.act_window">
         <field name="name">My Announcements</field>
         <field name="res_model">school.announcement</field>
-        <field name="view_mode">kanban,tree,form</field>
+        <field name="view_mode">kanban,list,form</field>
         <field name="domain">[('is_live', '=', True)]</field>
         <field name="context">{'search_default_group_priority': 1}</field>
         <field name="help" type="html">

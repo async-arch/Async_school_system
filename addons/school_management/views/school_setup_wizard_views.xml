@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_school_class_subject_wizard_form" model="ir.ui.view">
+        <field name="name">school.class.subject.wizard.form</field>
+        <field name="model">school.class.subject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Set Class Subjects">
+                <group>
+                    <field name="class_id" readonly="1"/>
+                </group>
+                <group string="Applied to newly ticked subjects">
+                    <group>
+                        <field name="subject_type"/>
+                    </group>
+                    <group>
+                        <field name="maximum_mark"/>
+                        <field name="pass_mark"/>
+                    </group>
+                </group>
+                <field name="subject_ids" widget="many2many_checkboxes"/>
+                <footer>
+                    <button name="action_apply" type="object" string="Save Curriculum"
+                            class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_class_subject_wizard" model="ir.actions.act_window">
+        <field name="name">Set Subjects</field>
+        <field name="res_model">school.class.subject.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_school_class"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
+
+    <record id="view_school_grade_section_wizard_form" model="ir.ui.view">
+        <field name="name">school.grade.section.wizard.form</field>
+        <field name="model">school.grade.section.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Sections">
+                <group>
+                    <field name="grade_id" options="{'no_create': True}"/>
+                    <field name="academic_year_id" options="{'no_create': True}"/>
+                    <field name="new_section_names" placeholder="C, D"/>
+                    <field name="existing_class_ids" widget="many2many_tags" readonly="1"
+                           invisible="not existing_class_ids"/>
+                </group>
+                <field name="section_ids" widget="many2many_checkboxes"/>
+                <footer>
+                    <button name="action_confirm" type="object" string="Create Sections"
+                            class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_grade_section_wizard" model="ir.actions.act_window">
+        <field name="name">Add Sections</field>
+        <field name="res_model">school.grade.section.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_school_grade"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
+
+    <record id="view_school_section_tree_wizard" model="ir.ui.view">
+        <field name="name">school.section.tree.wizard</field>
+        <field name="model">school.section</field>
+        <field name="inherit_id" ref="view_school_section_tree"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <header>
+                    <button name="%(action_school_grade_section_wizard)d" type="action"
+                            string="Add Sections to a Grade" class="btn-primary"
+                            display="always"/>
+                </header>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_grade_list_sections" model="ir.ui.view">
+        <field name="name">school.grade.list.sections</field>
+        <field name="model">school.grade</field>
+        <field name="inherit_id" ref="view_school_grade_list"/>
+        <field name="arch" type="xml">
+            <list position="inside">
+                <button name="%(action_school_grade_section_wizard)d" type="action"
+                        string="Sections" icon="fa-th-large"
+                        context="{'active_id': id}"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_setup_wizard_form" model="ir.ui.view">
+        <field name="name">school.setup.wizard.form</field>
+        <field name="model">school.setup.wizard</field>
+        <field name="arch" type="xml">
+            <form string="School Setup">
+                <group>
+                    <group string="Academic Year">
+                        <field name="year_name" placeholder="2026/2027"/>
+                        <field name="date_start"/>
+                        <field name="date_end"/>
+                        <field name="is_current"/>
+                        <field name="term_count"/>
+                    </group>
+                    <group string="Classes">
+                        <field name="section_names" placeholder="A, B"/>
+                    </group>
+                </group>
+                <field name="grade_ids" widget="many2many_checkboxes"/>
+                <footer>
+                    <button name="action_apply" type="object" string="Create Structure"
+                            class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_setup_wizard" model="ir.actions.act_window">
+        <field name="name">School Setup</field>
+        <field name="res_model">school.setup.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_school_setup_wizard"
+              name="School Setup"
+              parent="menu_school_administration"
+              action="action_school_setup_wizard"
+              groups="school_management.group_school_admin"
+              sequence="1"/>
+
+    <record id="view_school_class_form_curriculum" model="ir.ui.view">
+        <field name="name">school.class.form.curriculum</field>
+        <field name="model">school.class</field>
+        <field name="inherit_id" ref="view_school_class_form"/>
+        <field name="arch" type="xml">
+            <sheet position="before">
+                <header>
+                    <button name="%(action_school_class_subject_wizard)d" type="action"
+                            string="Set Subjects" class="oe_highlight"
+                            context="{'active_id': id}" invisible="not id"/>
+                    <button name="action_open_timetable" type="object"
+                            string="Timetable" invisible="not id"/>
+                </header>
+            </sheet>
+            <field name="student_ids" position="before">
+                <notebook>
+                    <page string="Subjects" name="curriculum">
+                        <field name="grade_subject_ids">
+                            <list editable="bottom">
+                                <field name="subject_id"/>
+                                <field name="subject_type"/>
+                                <field name="maximum_mark"/>
+                                <field name="pass_mark"/>
+                                <field name="stream_id" optional="hide"/>
+                                <field name="active" widget="boolean_toggle" optional="hide"/>
+                            </list>
+                        </field>
+                    </page>
+                </notebook>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_school_staff_form_missing" model="ir.ui.view">
+        <field name="name">school.staff.form.missing</field>
+        <field name="model">school.staff</field>
+        <field name="inherit_id" ref="view_school_staff_form_responsibility"/>
+        <field name="arch" type="xml">
+            <header position="after">
+                <div class="alert alert-warning" role="alert"
+                     invisible="state != 'draft' or not missing_to_activate">
+                    Still needed before Activate:
+                    <field name="missing_to_activate" readonly="1" nolabel="1" class="oe_inline"/>
+                </div>
+                <div class="alert alert-success" role="status"
+                     invisible="state != 'draft' or missing_to_activate">
+                    Ready to activate.
+                </div>
+            </header>
+        </field>
+    </record>
+
+</odoo>

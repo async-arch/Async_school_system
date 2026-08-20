@@ -1,0 +1,14 @@
+[options]
+admin_passwd = CHANGE_ME
+db_host = db19
+db_port = 5432
+db_user = odoo19
+db_name = school
+dbfilter = ^school.*$
+list_db = False
+addons_path = /usr/lib/python3/dist-packages/odoo/addons,/mnt/extra-addons
+proxy_mode = True
+workers = 4
+max_cron_threads = 1
+limit_memory_soft = 2147483648
+limit_memory_hard = 2684354560

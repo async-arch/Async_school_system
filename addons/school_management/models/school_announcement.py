@@ -36,6 +36,14 @@ class SchoolAnnouncement(models.Model):
     class_ids = fields.Many2many('school.class', string='Classes / Sections')
     campus_ids = fields.Many2many('school.campus', string='Branches / Campuses')
     staff_ids = fields.Many2many('school.staff', string='Selected Staff')
+    recipient_user_ids = fields.Many2many(
+        'res.users', 'school_announcement_recipient_rel',
+        'announcement_id', 'user_id', string='Resolved Recipients', readonly=True,
+    )
+    visibility_active = fields.Boolean(
+        string='Visible to Recipients', readonly=True, index=True, copy=False,
+        help='Stored publication window used by record rules and refreshed by the scheduler.',
+    )
 
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -72,11 +80,10 @@ class SchoolAnnouncement(models.Model):
     )
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('expiry_after_publish',
-         'CHECK(expiry_datetime IS NULL OR publish_datetime IS NULL OR expiry_datetime > publish_datetime)',
-         'The expiry time must be after the publish time.'),
-    ]
+    _expiry_after_publish = models.Constraint(
+        'CHECK(expiry_datetime IS NULL OR publish_datetime IS NULL OR expiry_datetime > publish_datetime)',
+        'The expiry time must be after the publish time.',
+    )
 
     @api.depends('state', 'publish_datetime', 'expiry_datetime')
     def _compute_is_live(self):
@@ -90,23 +97,34 @@ class SchoolAnnouncement(models.Model):
 
     def _audience_branches(self, user):
         """One domain branch per audience type, each pairing the type with the match it
-        needs. res.users flattens the user's scope so these stay plain leaf comparisons."""
+        needs. Scope is resolved server-side from exact active assignments and staff
+        links so record-rule searches cannot depend on a stale client/user cache."""
+        staff = self.env['school.staff'].sudo().search([('user_id', '=', user.id)])
+        teachers = self.env['school.teacher'].sudo().search([('staff_id', 'in', staff.ids)])
+        assignments = self.env['school.teacher.assignment'].sudo().search([
+            ('teacher_id', 'in', teachers.ids), ('state', '=', 'active'),
+        ])
+        responsibilities = staff.mapped('responsibility_ids').filtered('active')
+        responsibility_codes = sorted(set(
+            assignments.mapped('responsibility') + responsibilities.mapped('responsibility')
+        ))
+        campuses = staff.mapped('campus_id') | responsibilities.mapped('campus_id')
         return [
             [('audience_type', '=', 'all_staff')],
             ['&', ('audience_type', '=', 'department'),
-                  ('department', '=', user.school_department or False)],
+                  ('department', 'in', staff.mapped('department'))],
             ['&', ('audience_type', '=', 'responsibility'),
-                  ('responsibility', 'in', user.school_responsibility_list or [])],
+                  ('responsibility', 'in', responsibility_codes)],
             ['&', ('audience_type', '=', 'teacher_group'),
-                  ('teacher_ids', 'in', user.school_teacher_id.ids)],
+                  ('teacher_ids', 'in', teachers.ids)],
             ['&', ('audience_type', '=', 'subject_group'),
-                  ('subject_ids', 'in', user.school_taught_subject_ids.ids)],
+                  ('subject_ids', 'in', assignments.mapped('subject_id').ids)],
             ['&', ('audience_type', '=', 'class_section'),
-                  ('class_ids', 'in', user.school_taught_class_ids.ids)],
+                  ('class_ids', 'in', assignments.mapped('class_id').ids)],
             ['&', ('audience_type', '=', 'branch_campus'),
-                  ('campus_ids', 'in', user.school_campus_ids.ids)],
+                  ('campus_ids', 'in', campuses.ids)],
             ['&', ('audience_type', '=', 'selected_staff'),
-                  ('staff_ids', 'in', user.school_staff_ids.ids)],
+                  ('staff_ids', 'in', staff.ids)],
         ]
 
     @api.depends_context('uid')
@@ -117,11 +135,20 @@ class SchoolAnnouncement(models.Model):
                 ['|'] * 7 + [leaf for branch in rec._audience_branches(user) for leaf in branch]
             ))
 
+    @api.model
+    def _positive_search(self, operator, value):
+        """Odoo rewrites ('field', '=', True) into ('field', 'in', [True]) before it
+        reaches a search method, so both forms have to be understood."""
+        if operator in ('in', 'not in'):
+            wanted = any(value) if isinstance(value, (list, tuple, set)) else bool(value)
+            return (operator == 'in') == wanted
+        return (operator == '=') == bool(value)
+
     def _search_is_for_me(self, operator, value):
         mine = ['|'] * 7 + [
             leaf for branch in self._audience_branches(self.env.user) for leaf in branch
         ]
-        if (operator == '=') == bool(value):
+        if self._positive_search(operator, value):
             return mine
         return ['!', *mine]
 
@@ -132,7 +159,7 @@ class SchoolAnnouncement(models.Model):
             '|', ('publish_datetime', '=', False), ('publish_datetime', '<=', now),
             '|', ('expiry_datetime', '=', False), ('expiry_datetime', '>', now),
         ]
-        if (operator == '=') == bool(value):
+        if self._positive_search(operator, value):
             return live
         return ['!', *live]
 
@@ -154,13 +181,52 @@ class SchoolAnnouncement(models.Model):
             self[field] = False
 
     def action_publish(self):
+        now = fields.Datetime.now()
         for rec in self:
             if not rec.publish_datetime:
-                rec.publish_datetime = fields.Datetime.now()
-        self.write({'state': 'published'})
+                rec.publish_datetime = now
+            candidates = self.env['res.users'].sudo().search([
+                ('active', '=', True), ('share', '=', False),
+            ])
+            recipients = candidates.filtered(
+                lambda user: bool(rec.sudo().filtered_domain(
+                    ['|'] * 7 + [
+                        leaf for branch in rec._audience_branches(user) for leaf in branch
+                    ]
+                ))
+            )
+            rec.sudo().write({
+                'state': 'published',
+                'recipient_user_ids': [(6, 0, recipients.ids)],
+                'visibility_active': (
+                    rec.publish_datetime <= now
+                    and (not rec.expiry_datetime or rec.expiry_datetime > now)
+                ),
+            })
 
     def action_archive_announcement(self):
-        self.write({'state': 'archived'})
+        self.write({'state': 'archived', 'visibility_active': False})
 
     def action_reset_draft(self):
-        self.write({'state': 'draft'})
+        self.write({'state': 'draft', 'visibility_active': False})
+
+    @api.model
+    def cron_refresh_visibility(self):
+        """Refresh stored publication windows without evaluating Python in record rules."""
+        now = fields.Datetime.now()
+        should_show = self.sudo().search([
+            ('state', '=', 'published'),
+            ('publish_datetime', '<=', now),
+            '|', ('expiry_datetime', '=', False), ('expiry_datetime', '>', now),
+            ('visibility_active', '=', False),
+        ])
+        should_hide = self.sudo().search([
+            ('visibility_active', '=', True),
+            '|', ('state', '!=', 'published'),
+            '|', ('publish_datetime', '>', now),
+            '&', ('expiry_datetime', '!=', False), ('expiry_datetime', '<=', now),
+        ])
+        if should_show:
+            should_show.write({'visibility_active': True})
+        if should_hide:
+            should_hide.write({'visibility_active': False})

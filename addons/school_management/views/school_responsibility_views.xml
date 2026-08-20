@@ -6,10 +6,10 @@
         <field name="name">school.campus.tree</field>
         <field name="model">school.campus</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="code"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -51,7 +51,7 @@
     <record id="action_school_campus" model="ir.actions.act_window">
         <field name="name">Branches / Campuses</field>
         <field name="res_model">school.campus</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 
     <!-- ============ Staff responsibilities ============ -->
@@ -60,7 +60,7 @@
         <field name="name">school.staff.responsibility.tree</field>
         <field name="model">school.staff.responsibility</field>
         <field name="arch" type="xml">
-            <tree editable="bottom" decoration-bf="is_primary == True">
+            <list editable="bottom" decoration-bf="is_primary == True">
                 <field name="staff_id"/>
                 <field name="responsibility"/>
                 <field name="is_primary"/>
@@ -68,7 +68,7 @@
                 <field name="campus_id"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -95,10 +95,7 @@
                         </group>
                     </group>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -115,7 +112,7 @@
                         domain="['|', ('end_date', '=', False), ('end_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Responsibility" name="group_resp" context="{'group_by': 'responsibility'}"/>
                     <filter string="Department" name="group_dept" context="{'group_by': 'department'}"/>
                     <filter string="Branch / Campus" name="group_campus" context="{'group_by': 'campus_id'}"/>
@@ -127,7 +124,7 @@
     <record id="action_school_staff_responsibility" model="ir.actions.act_window">
         <field name="name">Responsibilities</field>
         <field name="res_model">school.staff.responsibility</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_current': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -174,23 +171,17 @@
                         </group>
                     </group>
                     <field name="responsibility_ids">
-                        <tree editable="bottom">
+                        <list editable="bottom">
                             <field name="responsibility"/>
                             <field name="is_primary"/>
                             <field name="department"/>
                             <field name="campus_id"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
-                        </tree>
+                        </list>
                     </field>
                 </page>
             </notebook>
-            <xpath expr="//form" position="inside">
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </xpath>
         </field>
     </record>
 
@@ -199,14 +190,14 @@
         <field name="model">school.staff</field>
         <field name="inherit_id" ref="view_school_staff_tree"/>
         <field name="arch" type="xml">
-            <tree position="inside">
+            <list position="inside">
                 <field name="primary_responsibility" optional="show"/>
                 <field name="campus_id" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'active'"
                        decoration-warning="state == 'suspended'"
                        decoration-muted="state in ['inactive', 'archived']"/>
-            </tree>
+            </list>
         </field>
     </record>
 </odoo>

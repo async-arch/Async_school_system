@@ -7,8 +7,10 @@
             <form>
                 <group>
                     <field name="enrollment_id" options="{'no_create': True}"/>
-                    <field name="new_class_id" options="{'no_create': True}"/>
+                    <field name="academic_year_id" readonly="1"/>
+                    <field name="new_class_id" domain="[('academic_year_id', '=', academic_year_id), ('active', '=', True)]" options="{'no_create': True}"/>
                     <field name="effective_date"/>
+                    <field name="reason" placeholder="Why the student changes class. Recorded on the enrollment."/>
                 </group>
                 <footer>
                     <button name="action_confirm" type="object" string="Transfer" class="oe_highlight"/>
@@ -25,11 +27,54 @@
         <field name="target">new</field>
     </record>
 
+    <record id="view_school_promotion_wizard_form" model="ir.ui.view">
+        <field name="name">school.promotion.wizard.form</field>
+        <field name="model">school.promotion.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Promote Student">
+                <div class="alert alert-warning" role="alert" invisible="not setup_warning">
+                    <field name="setup_warning" nolabel="1" readonly="1"/>
+                </div>
+                <group>
+                    <group>
+                        <field name="enrollment_id" options="{'no_create': True}"/>
+                        <field name="student_id"/>
+                        <field name="current_class_id"/>
+                        <field name="current_academic_year_id"/>
+                    </group>
+                    <group>
+                        <field name="next_academic_year_id" options="{'no_create': True}"
+                               domain="[('id', '!=', current_academic_year_id)]"/>
+                        <field name="next_class_id" options="{'no_create': True}"
+                               domain="[('academic_year_id', '=', next_academic_year_id),
+                                        ('active', '=', True)]"/>
+                        <div class="text-muted" invisible="not next_class_note">
+                            <field name="next_class_note" nolabel="1" readonly="1"/>
+                        </div>
+                        <field name="effective_date"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Promote"
+                            class="oe_highlight" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_promotion_wizard" model="ir.actions.act_window">
+        <field name="name">Promote Student</field>
+        <field name="res_model">school.promotion.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
     <record id="view_school_enrollment_tree" model="ir.ui.view">
         <field name="name">school.enrollment.tree</field>
         <field name="model">school.enrollment</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="student_id"/>
                 <field name="class_id"/>
@@ -37,7 +82,12 @@
                 <field name="roll_number"/>
                 <field name="admission_type"/>
                 <field name="state"/>
-            </tree>
+                <button name="action_open_student_dashboard"
+                        type="object"
+                        string="View Dashboard"
+                        class="btn-link"
+                        icon="fa-id-card"/>
+            </list>
         </field>
     </record>
 
@@ -49,6 +99,10 @@
                 <header>
                     <button name="action_activate" type="object" string="Activate" class="oe_highlight" invisible="state != 'draft'"/>
                     <button name="%(action_school_enrollment_transfer)d" type="action" string="Transfer" invisible="state != 'active'"
+                            groups="school_management.group_school_registrar"
+                            context="{'default_enrollment_id': id}"/>
+                    <button name="%(action_school_promotion_wizard)d" type="action" string="Promote"
+                            invisible="state != 'active'"
                             groups="school_management.group_school_registrar"
                             context="{'default_enrollment_id': id}"/>
                     <button name="action_withdraw" type="object" string="Withdraw" invisible="state != 'active'"/>
@@ -71,18 +125,15 @@
                     </group>
                     <group string="Subjects">
                         <field name="subject_ids" nolabel="1" colspan="2">
-                            <tree editable="bottom">
+                            <list editable="bottom">
                                 <field name="grade_subject_id" domain="[('class_id', '=', parent.class_id)]" options="{'no_create': True}"/>
                                 <field name="subject_type"/>
                                 <field name="state"/>
-                            </tree>
+                            </list>
                         </field>
                     </group>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -97,7 +148,7 @@
                 <field name="class_id"/>
                 <filter name="filter_active" string="Active" domain="[('state', '=', 'active')]"/>
                 <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter name="group_class" string="Class" context="{'group_by': 'class_id'}"/>
                     <filter name="group_year" string="Academic Year" context="{'group_by': 'academic_year_id'}"/>
                     <filter name="group_state" string="Status" context="{'group_by': 'state'}"/>
@@ -109,7 +160,8 @@
     <record id="action_school_enrollment" model="ir.actions.act_window">
         <field name="name">Enrollments</field>
         <field name="res_model">school.enrollment</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_filter_active': 1}</field>
     </record>
+
 </odoo>

@@ -46,7 +46,7 @@
         <field name="name">school.assessment.tree</field>
         <field name="model">school.assessment</field>
         <field name="arch" type="xml">
-            <tree decoration-info="state == 'open'" decoration-muted="state == 'draft'">
+            <list decoration-info="state == 'open'" decoration-muted="state == 'draft'">
                 <field name="name"/>
                 <field name="assessment_type"/>
                 <field name="class_id"/>
@@ -60,7 +60,7 @@
                        decoration-success="state in ('approved', 'published')"
                        decoration-warning="state == 'submitted'"
                        decoration-danger="state == 'locked'"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -79,6 +79,8 @@
                     <button name="action_open_return_wizard" type="object" string="Return for Correction"
                             invisible="state != 'submitted'"
                             groups="school_management.group_school_exam_officer"/>
+                    <button name="action_reopen" type="object" string="Reopen Returned List"
+                            invisible="state != 'returned'"/>
                     <button name="action_approve" type="object" string="Approve"
                             class="oe_highlight" invisible="state != 'submitted'"
                             groups="school_management.group_school_exam_officer"/>
@@ -93,7 +95,7 @@
                             groups="school_management.group_school_exam_officer"
                             context="{'default_assessment_id': id}"/>
                     <field name="state" widget="statusbar"
-                           statusbar_visible="draft,open,submitted,approved,locked,published"/>
+                           statusbar_visible="draft,open,submitted,returned,approved,locked,published"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -103,10 +105,33 @@
                     <group>
                         <group string="Scope">
                             <field name="assessment_type" readonly="state != 'draft'"/>
-                            <field name="class_id" options="{'no_create': True}" readonly="state != 'draft'"/>
-                            <field name="subject_id" options="{'no_create': True}" readonly="state != 'draft'"/>
-                            <field name="term_id" options="{'no_create': True}" readonly="state != 'draft'"/>
+                            <field name="class_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="subject_id" readonly="state != 'draft'" domain="[('grade_subject_ids.class_id', '=', class_id), ('active', '=', True)]" options="{'no_create': True}"/>
+                            <field name="term_id" readonly="state != 'draft'" domain="[('academic_year_id', '=', academic_year_id), ('active', '=', True)]" options="{'no_create': True}"/>
                             <field name="academic_year_id"/>
+                            <field name="matching_assignment_count" invisible="1"/>
+                            <field name="assessment_date_in_term" invisible="1"/>
+                            <div class="alert alert-info" role="alert"
+                                 invisible="class_id and subject_id and term_id">
+                                Select Grade / Class, Subject, and Term first. The matching
+                                teacher assignment will then be selected automatically.
+                            </div>
+                            <div class="alert alert-danger" role="alert"
+                                 invisible="not term_id or not date or assessment_date_in_term">
+                                The Assessment Date is outside the selected term. Choose a
+                                date between the term start and end dates before continuing.
+                            </div>
+                            <div class="alert alert-warning" role="alert"
+                                 invisible="not class_id or not subject_id or not term_id or not assessment_date_in_term or matching_assignment_count != 0">
+                                No active teacher assignment matches this class, subject,
+                                term, and assessment date. Create it under
+                                Registrar → Teacher Assignments before entering marks.
+                            </div>
+                            <field name="teacher_assignment_id"
+                                   domain="[('class_id', '=', class_id), ('subject_id', '=', subject_id), ('term_id', '=', term_id), ('state', '=', 'active'), ('active', '=', True), ('start_date', '&lt;=', date), '|', ('end_date', '=', False), ('end_date', '&gt;=', date)]"
+                                   invisible="not class_id or not subject_id or not term_id or not assessment_date_in_term"
+                                   required="class_id and subject_id and term_id and assessment_date_in_term"
+                                   options="{'no_create': True}"/>
                         </group>
                         <group string="Marking">
                             <field name="date" readonly="state != 'draft'"/>
@@ -118,23 +143,20 @@
                     <group string="Mark List">
                         <field name="mark_ids" nolabel="1" colspan="2"
                                readonly="state not in ('draft', 'open')">
-                            <tree editable="bottom" decoration-muted="mark_status == 'pending'"
+                            <list editable="bottom" create="0" delete="0" decoration-muted="mark_status == 'pending'"
                                   decoration-danger="grade == 'F'">
                                 <field name="student_id" readonly="1" force_save="1"/>
                                 <field name="score"/>
                                 <field name="max_score" readonly="1" force_save="1"/>
                                 <field name="mark_status"/>
-                                <field name="percentage" widget="percentage" readonly="1"/>
+                                <field name="percentage" readonly="1"/>
                                 <field name="grade" readonly="1"/>
                                 <field name="note" optional="show"/>
-                            </tree>
+                            </list>
                         </field>
                     </group>
+                    <chatter/>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
             </form>
         </field>
     </record>
@@ -150,7 +172,7 @@
                 <filter name="filter_open" string="Open" domain="[('state', '=', 'open')]"/>
                 <filter name="filter_submitted" string="Awaiting Review" domain="[('state', '=', 'submitted')]"/>
                 <filter name="filter_approved" string="Approved" domain="[('state', 'in', ('approved', 'locked', 'published'))]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter name="group_class" string="Class" context="{'group_by': 'class_id'}"/>
                     <filter name="group_subject" string="Subject" context="{'group_by': 'subject_id'}"/>
                     <filter name="group_term" string="Term" context="{'group_by': 'term_id'}"/>
@@ -163,7 +185,7 @@
     <record id="action_school_assessment" model="ir.actions.act_window">
         <field name="name">Assessments</field>
         <field name="res_model">school.assessment</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create an assessment — the mark list is generated from subject enrollments.

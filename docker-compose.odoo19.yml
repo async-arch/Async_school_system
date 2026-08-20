@@ -1,0 +1,53 @@
+name: async-school-odoo19
+
+services:
+  db19:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${ODOO19_POSTGRES_DB:-postgres}
+      POSTGRES_USER: ${ODOO19_POSTGRES_USER:-odoo19}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ODOO19_POSTGRES_USER:-odoo19} -d ${ODOO19_POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    volumes:
+      - odoo19-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  odoo19:
+    image: odoo:19
+    depends_on:
+      db19:
+        condition: service_healthy
+    ports:
+      - "${ODOO19_PORT:-8090}:8069"
+    environment:
+      HOST: db19
+      USER: ${ODOO19_POSTGRES_USER:-odoo19}
+      PASSWORD_FILE: /run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    volumes:
+      - ./addons:/mnt/extra-addons:ro
+      - ./config/odoo19.conf:/etc/odoo/odoo.conf:ro
+      - odoo19-web-data:/var/lib/odoo
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8069/web/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+secrets:
+  postgres_password:
+    file: ./secrets/odoo19_postgres_password
+
+volumes:
+  odoo19-db-data:
+    name: async-school-odoo19-db
+  odoo19-web-data:
+    name: async-school-odoo19-web

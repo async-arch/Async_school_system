@@ -1,0 +1,25 @@
+<odoo>
+    <record id="view_school_admission_wizard" model="ir.ui.view">
+        <field name="name">school.admission.wizard.form</field>
+        <field name="model">school.admission.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Student Registration">
+                <group>
+                    <button string="New" type="object" name="action_new" class="btn-primary"/>
+                    <button string="Transfer" type="object" name="action_transfer" class="btn-secondary"/>
+                    <button string="Returning" type="object" name="action_returning" class="btn-secondary"/>
+                    <button string="Re-Admitted" type="object" name="action_readmitted" class="btn-secondary"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_school_admission_wizard" model="ir.actions.act_window">
+        <field name="name">Student Registration</field>
+        <field name="res_model">school.admission.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    
+</odoo>

@@ -38,11 +38,19 @@ class SchoolStudentSubject(models.Model):
         ('enrolled', 'Enrolled'),
         ('dropped', 'Dropped'),
     ], string='Status', required=True, default='enrolled')
+    date_start = fields.Date(required=True, default=lambda self: fields.Date.context_today(self))
+    date_end = fields.Date()
+    exception_reason = fields.Text()
+    drop_reason = fields.Text()
 
-    _sql_constraints = [
-        ('enrollment_subject_unique', 'unique(enrollment_id, grade_subject_id)',
-         'The student is already enrolled in this subject.'),
-    ]
+    _enrollment_subject_unique = models.Constraint(
+        'unique(enrollment_id, grade_subject_id)',
+        'The student is already enrolled in this subject.',
+    )
+    _student_subject_date_order = models.Constraint(
+        'CHECK(date_end IS NULL OR date_end >= date_start)',
+        'Subject end date cannot be before its start date.',
+    )
 
     @api.constrains('enrollment_id', 'grade_subject_id')
     def _check_subject_offered_for_class(self):
@@ -53,3 +61,14 @@ class SchoolStudentSubject(models.Model):
                     % (rec.grade_subject_id.subject_id.name,
                        rec.enrollment_id.class_id.display_name)
                 )
+
+    @api.constrains('state', 'date_end', 'drop_reason')
+    def _check_drop_reason(self):
+        for rec in self:
+            if rec.state == 'dropped' and (not rec.date_end or not rec.drop_reason):
+                raise ValidationError('Dropping a subject requires an end date and reason.')
+
+    def unlink(self):
+        if any(rec.enrollment_id.state != 'draft' for rec in self):
+            raise ValidationError('Student subject history cannot be deleted after activation.')
+        return super().unlink()

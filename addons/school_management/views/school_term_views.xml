@@ -5,20 +5,20 @@
         <field name="name">school.term.tree</field>
         <field name="model">school.term</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
                 <field name="start_date"/>
                 <field name="end_date"/>
                 <field name="active" optional="hide"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_school_term" model="ir.actions.act_window">
         <field name="name">Terms</field>
         <field name="res_model">school.term</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">list</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Add a term</p>
             <p>Schedules, marks, and assignments all point at these records.</p>
@@ -29,18 +29,21 @@
         <field name="name">school.section.tree</field>
         <field name="model">school.section</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
+            <list editable="bottom">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
+                <field name="class_count" string="Used by Classes"/>
+                <button name="action_open_classes" type="object" string="Classes"
+                        icon="fa-th-large" invisible="not class_count"/>
                 <field name="active" optional="hide"/>
-            </tree>
+            </list>
         </field>
     </record>
 
     <record id="action_school_section" model="ir.actions.act_window">
         <field name="name">Sections</field>
         <field name="res_model">school.section</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">list</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Add a section</p>
             <p>A class is identified by its grade, its section, and its academic year.</p>

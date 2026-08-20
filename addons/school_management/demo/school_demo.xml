@@ -90,7 +90,7 @@
         <field name="name">Demo Registrar</field>
         <field name="login">demo_registrar</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_registrar')])]"/>
     </record>
 
@@ -98,7 +98,7 @@
         <field name="name">Demo Director</field>
         <field name="login">demo_director</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_director')])]"/>
     </record>
 
@@ -106,7 +106,7 @@
         <field name="name">Demo Maths Teacher</field>
         <field name="login">demo_teacher_maths</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_teacher')])]"/>
     </record>
 
@@ -114,7 +114,7 @@
         <field name="name">Demo Science Teacher</field>
         <field name="login">demo_teacher_science</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_teacher')])]"/>
     </record>
 
@@ -122,7 +122,7 @@
         <field name="name">Demo Amharic Teacher</field>
         <field name="login">demo_teacher_amharic</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_teacher')])]"/>
     </record>
 
@@ -130,7 +130,7 @@
         <field name="name">Demo Librarian</field>
         <field name="login">demo_librarian</field>
         <field name="password">demo</field>
-        <field name="groups_id"
+        <field name="group_ids"
                 eval="[(6, 0, [ref('base.group_user'), ref('school_management.group_school_frontoffice')])]"/>
     </record>
 
@@ -139,6 +139,7 @@
     <record id="demo_staff_maths" model="school.staff">
         <field name="first_name">Almaz</field>
         <field name="last_name">Tesfaye</field>
+        <field name="date_of_birth">1988-04-12</field>
         <field name="department">academic</field>
         <field name="job_title_id" ref="jt_teacher"/>
         <field name="employment_type">full_time</field>
@@ -152,6 +153,7 @@
     <record id="demo_staff_science" model="school.staff">
         <field name="first_name">Dawit</field>
         <field name="last_name">Alemu</field>
+        <field name="date_of_birth">1985-11-30</field>
         <field name="department">academic</field>
         <field name="job_title_id" ref="jt_department_head"/>
         <field name="employment_type">full_time</field>
@@ -165,6 +167,7 @@
     <record id="demo_staff_amharic" model="school.staff">
         <field name="first_name">Hanna</field>
         <field name="last_name">Girma</field>
+        <field name="date_of_birth">1992-06-08</field>
         <field name="department">academic</field>
         <field name="job_title_id" ref="jt_teacher"/>
         <field name="employment_type">full_time</field>
@@ -178,6 +181,7 @@
     <record id="demo_staff_registrar" model="school.staff">
         <field name="first_name">Selam</field>
         <field name="last_name">Bekele</field>
+        <field name="date_of_birth">1983-02-19</field>
         <field name="department">administration</field>
         <field name="job_title_id" ref="jt_registrar"/>
         <field name="employment_type">full_time</field>
@@ -191,6 +195,7 @@
     <record id="demo_staff_librarian" model="school.staff">
         <field name="first_name">Yonas</field>
         <field name="last_name">Haile</field>
+        <field name="date_of_birth">1990-09-25</field>
         <field name="department">library</field>
         <field name="job_title_id" ref="jt_librarian"/>
         <field name="employment_type">part_time</field>
@@ -497,6 +502,7 @@
         <field name="guardian_phone">+251911100001</field>
         <field name="class_id" ref="demo_class_g1a"/>
         <field name="birth_certificate">RklDVElPTkFMIGRlbW8gYmlydGggY2VydGlmaWNhdGUgLSBub3QgYSByZWFsIGRvY3VtZW50</field>
+        <field name="academic_year_id" ref="academic_year_2026_2027"/>
         <field name="registration_status">approved</field>
     </record>
 
@@ -508,6 +514,7 @@
         <field name="guardian_phone">+251911100002</field>
         <field name="class_id" ref="demo_class_g1a"/>
         <field name="birth_certificate">RklDVElPTkFMIGRlbW8gYmlydGggY2VydGlmaWNhdGUgLSBub3QgYSByZWFsIGRvY3VtZW50</field>
+        <field name="academic_year_id" ref="academic_year_2026_2027"/>
         <field name="registration_status">approved</field>
     </record>
 
@@ -519,6 +526,7 @@
         <field name="guardian_phone">+251911100003</field>
         <field name="class_id" ref="demo_class_g2a"/>
         <field name="birth_certificate">RklDVElPTkFMIGRlbW8gYmlydGggY2VydGlmaWNhdGUgLSBub3QgYSByZWFsIGRvY3VtZW50</field>
+        <field name="academic_year_id" ref="academic_year_2026_2027"/>
         <field name="registration_status">approved</field>
     </record>
 
@@ -530,6 +538,7 @@
         <field name="guardian_phone">+251911100004</field>
         <field name="class_id" ref="demo_class_g2a"/>
         <field name="birth_certificate">RklDVElPTkFMIGRlbW8gYmlydGggY2VydGlmaWNhdGUgLSBub3QgYSByZWFsIGRvY3VtZW50</field>
+        <field name="academic_year_id" ref="academic_year_2026_2027"/>
         <field name="registration_status">approved</field>
     </record>
 

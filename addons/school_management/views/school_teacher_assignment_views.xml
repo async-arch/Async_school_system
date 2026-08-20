@@ -4,7 +4,7 @@
         <field name="name">school.teacher.assignment.tree</field>
         <field name="model">school.teacher.assignment</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="teacher_id"/>
                 <field name="subject_id"/>
                 <field name="class_id"/>
@@ -12,7 +12,7 @@
                 <field name="term_id"/>
                 <field name="responsibility"/>
                 <field name="active"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -24,26 +24,21 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="subject_id"/>
                             <field name="class_id"/>
                             <field name="academic_year_id"/>
-                            <field name="term_id"/>
+                            <field name="subject_id" domain="[('grade_subject_ids.class_id', '=', class_id), ('active', '=', True)]" options="{'no_create': True}"/>
+                            <field name="term_id" domain="[('academic_year_id', '=', academic_year_id), ('active', '=', True)]" options="{'no_create': True}"/>
                         </group>
                         <group>
                             <field name="teacher_id"
                                    context="{'assignment_academic_year': academic_year_id, 'assignment_term': term_id}"/>
                             <field name="responsibility"/>
                             <field name="weekly_periods"/>
-                            <field name="start_date"/>
-                            <field name="end_date"/>
                             <field name="active"/>
                         </group>
                     </group>
                 </sheet>
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
+                <chatter/>
             </form>
         </field>
     </record>
@@ -57,7 +52,7 @@
                 <field name="subject_id"/>
                 <field name="class_id"/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Term" name="group_term" context="{'group_by': 'term_id'}"/>
                     <filter string="Responsibility" name="group_responsibility" context="{'group_by': 'responsibility'}"/>
                 </group>
@@ -68,6 +63,6 @@
     <record id="action_school_assignment" model="ir.actions.act_window">
         <field name="name">Teacher Assignments</field>
         <field name="res_model">school.teacher.assignment</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 </odoo>

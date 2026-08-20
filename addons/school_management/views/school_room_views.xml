@@ -4,12 +4,12 @@
         <field name="name">school.room.tree</field>
         <field name="model">school.room</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="code"/>
                 <field name="room_type"/>
                 <field name="capacity"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -43,7 +43,7 @@
                 <field name="name"/>
                 <field name="code"/>
                 <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter string="Room Type" name="group_room_type" context="{'group_by': 'room_type'}"/>
                 </group>
             </search>
@@ -53,6 +53,6 @@
     <record id="action_school_room" model="ir.actions.act_window">
         <field name="name">Rooms</field>
         <field name="res_model">school.room</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 </odoo>

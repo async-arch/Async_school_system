@@ -1,7 +1,10 @@
+from dateutil.relativedelta import relativedelta
+
+from odoo import fields
 from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
-YEAR = '2029/2030'
+YEAR = '2049/2050'
 
 
 class TestResponsibilityAndStaffControl(TransactionCase):
@@ -11,10 +14,16 @@ class TestResponsibilityAndStaffControl(TransactionCase):
         """Academic year is a master record now. Reuse it across a test so the
         class/section/year unique constraint behaves as it does in production."""
         Year = self.env['school.academic.year']
-        return Year.search([('name', '=', YEAR)], limit=1) or Year.create({'name': YEAR})
+        return Year.search([('name', '=', YEAR)], limit=1) or Year.create({
+            'name': YEAR, 'date_start': '2049-01-01', 'date_end': '2050-12-31'})
 
     def _term(self, ref='term_1'):
-        return self.env.ref('school_management.%s' % ref)
+        return self.env['school.term'].search([
+            ('academic_year_id', '=', self._year().id), ('sequence', '=', 10),
+        ], limit=1) or self.env['school.term'].create({
+            'name': 'RESP Term', 'academic_year_id': self._year().id,
+            'date_start': '2049-01-01', 'date_end': '2050-12-31', 'sequence': 10,
+        })
 
     def _section(self, ref='section_a'):
         return self.env.ref('school_management.%s' % ref)
@@ -56,12 +65,16 @@ class TestResponsibilityAndStaffControl(TransactionCase):
         parts = name.split(' ', 1)
         first_name = parts[0]
         last_name = parts[1] if len(parts) > 1 else 'Staff'
+        # Staff email addresses and phone numbers are both unique, so a test that
+        # builds a second staff member has to hand it contact details of its own.
+        seq = self.env['school.staff'].search_count([])
         return self.env['school.staff'].create({
             'first_name': first_name, 'last_name': last_name,
             'department': department, 'job_title_id': title.id,
-            'employment_status': 'active', 'phone': '+251911000000', 'campus_id': campus.id,
+            'employment_status': 'active', 'phone': '+2519117%05d' % seq,
+            'campus_id': campus.id, 'date_of_birth': '1990-01-15',
             # school.teacher.create auto-provisions a login from this address.
-            'email': '%s@test.invalid' % name.lower().replace(' ', '.'),
+            'email': '%s.%s@test.invalid' % (name.lower().replace(' ', '.'), seq),
         })
 
     def _responsibility(self, staff, code, **overrides):
@@ -99,6 +112,15 @@ class TestResponsibilityAndStaffControl(TransactionCase):
         with self.assertRaises(ValidationError):
             self.staff.action_activate()
 
+    def test_staff_cannot_leave_draft_without_a_birth_date(self):
+        """Otherwise the minimum-age rule only applies to whoever chooses to fill
+        the field, and staff reach Active with no age ever checked."""
+        self._responsibility(self.staff, 'teacher', is_primary=True)
+        self.staff.date_of_birth = False
+        with self.assertRaises(ValidationError) as caught:
+            self.staff.action_activate()
+        self.assertIn('Date of Birth', str(caught.exception))
+
     def test_staff_cannot_leave_draft_without_a_phone(self):
         self._responsibility(self.staff, 'teacher', is_primary=True)
         self.staff.phone = False
@@ -117,6 +139,44 @@ class TestResponsibilityAndStaffControl(TransactionCase):
         self.staff.action_suspend()
         with self.assertRaises(ValidationError):
             self._assignment()
+
+    def _current_period(self):
+        """A year, term and class that contain today. Every other fixture here sits
+        in 2049, which means its assignments are future-dated and are refused by the
+        future-dated rule — so a suspension test built on them passes without the
+        suspension ever being consulted."""
+        today = fields.Date.context_today(self.env['school.staff'])
+        year = self.env['school.academic.year'].create({
+            'name': 'RESP Current Year',
+            'date_start': today - relativedelta(months=6),
+            'date_end': today + relativedelta(months=6),
+        })
+        term = self.env['school.term'].create({
+            'name': 'RESP Current Term', 'academic_year_id': year.id,
+            'date_start': year.date_start, 'date_end': year.date_end, 'sequence': 10,
+        })
+        school_class = self.env['school.class'].create({
+            'name': 'RESP Current Grade', 'section_id': self._section().id,
+            'academic_year_id': year.id, 'is_entry_level': True,
+        })
+        return term, school_class
+
+    def test_suspension_is_what_blocks_an_assignment_running_today(self):
+        self._responsibility(self.staff, 'teacher', is_primary=True)
+        self.staff.action_activate()
+        self.teacher_profile()
+        term, school_class = self._current_period()
+        other_subject = self.env['school.subject'].create({'name': 'RESP Physics'})
+
+        # Positive control: accepted while the staff member is active, which proves
+        # the refusal below is about the suspension and not about the dates.
+        self._assignment(class_id=school_class.id, term_id=term.id)
+
+        self.staff.action_suspend()
+        with self.assertRaises(ValidationError) as caught:
+            self._assignment(
+                class_id=school_class.id, term_id=term.id, subject_id=other_subject.id)
+        self.assertIn('Suspended', str(caught.exception))
 
     def test_deactivating_staff_disables_the_linked_login(self):
         user = self.env['res.users'].create({'name': 'RESP User', 'login': 'resp_user'})
@@ -157,12 +217,30 @@ class TestResponsibilityAndStaffControl(TransactionCase):
                 teacher_id=other_teacher.id, subject_id=history.id, responsibility='homeroom',
             )
 
+    def test_selecting_assignment_term_uses_term_dates(self):
+        term = self._term()
+        assignment = self.env['school.teacher.assignment'].new({
+            'class_id': self.class_a.id,
+            'term_id': term.id,
+            'start_date': term.date_start.replace(year=term.date_start.year - 1),
+            'end_date': term.date_end.replace(year=term.date_end.year + 1),
+        })
+        assignment._onchange_term_id()
+        self.assertEqual(assignment.start_date, term.date_start)
+        self.assertEqual(assignment.end_date, term.date_end)
+
+    def test_creating_assignment_uses_term_dates(self):
+        term = self._term()
+        assignment = self._assignment()
+        self.assertEqual(assignment.start_date, term.date_start)
+        self.assertEqual(assignment.end_date, term.date_end)
+
     # ---------- section 8: audiences that only staff records can satisfy ----------
 
     def _user_for(self, staff, login, group):
         user = self.env['res.users'].create({
             'name': login, 'login': login,
-            'groups_id': [(6, 0, [
+            'group_ids': [(6, 0, [
                 self.env.ref('base.group_user').id,
                 self.env.ref(f'school_management.{group}').id,
             ])],

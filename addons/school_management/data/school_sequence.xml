@@ -8,5 +8,12 @@
             <field name="padding">5</field>
             <field name="number_increment">1</field>
         </record>
+        <record id="seq_school_student_admission" model="ir.sequence">
+            <field name="name">Student Admission Number</field>
+            <field name="code">school.student.admission</field>
+            <field name="prefix">ADM-</field>
+            <field name="padding">5</field>
+            <field name="number_increment">1</field>
+        </record>
     </data>
 </odoo>

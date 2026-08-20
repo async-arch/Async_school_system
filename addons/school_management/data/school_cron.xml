@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <record id="ir_cron_school_document_expiry" model="ir.cron">
+        <field name="name">School: expire documents</field>
+        <field name="model_id" ref="model_school_document"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_expire_documents()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+    <record id="ir_cron_school_staff_deactivation" model="ir.cron">
+        <field name="name">School: deactivate ended staff</field>
+        <field name="model_id" ref="model_school_staff"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_deactivate_ended_staff()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+    <record id="ir_cron_school_staff_daily_status" model="ir.cron">
+        <field name="name">School: generate staff daily status</field>
+        <field name="model_id" ref="model_school_staff_daily_status"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_generate_daily_status()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+    </record>
+    <record id="ir_cron_school_announcement_visibility" model="ir.cron">
+        <field name="name">School: refresh announcement visibility</field>
+        <field name="model_id" ref="model_school_announcement"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_refresh_visibility()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+    </record>
+</odoo>

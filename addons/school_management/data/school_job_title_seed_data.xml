@@ -1,121 +1,146 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data>
 
         <!-- Academic -->
         <record id="jt_teacher" model="school.job.title">
             <field name="name">Teacher</field>
             <field name="department">academic</field>
+            <field name="responsibility">teacher</field>
         </record>
         <record id="jt_senior_teacher" model="school.job.title">
             <field name="name">Senior Teacher</field>
             <field name="department">academic</field>
+            <field name="responsibility">teacher</field>
         </record>
         <record id="jt_department_head" model="school.job.title">
             <field name="name">Department Head</field>
             <field name="department">academic</field>
+            <field name="responsibility">department_head</field>
         </record>
         <record id="jt_lab_assistant" model="school.job.title">
             <field name="name">Lab Assistant</field>
             <field name="department">academic</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_tutor" model="school.job.title">
             <field name="name">Tutor</field>
             <field name="department">academic</field>
+            <field name="responsibility">teacher</field>
         </record>
 
         <!-- Administration -->
         <record id="jt_office_manager" model="school.job.title">
             <field name="name">Office Manager</field>
             <field name="department">administration</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_registrar" model="school.job.title">
             <field name="name">Registrar</field>
             <field name="department">administration</field>
+            <field name="responsibility">registrar</field>
         </record>
         <record id="jt_admin_assistant" model="school.job.title">
             <field name="name">Administrative Assistant</field>
             <field name="department">administration</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_receptionist" model="school.job.title">
             <field name="name">Receptionist</field>
             <field name="department">administration</field>
+            <field name="responsibility">other</field>
         </record>
 
         <!-- Finance -->
         <record id="jt_accountant" model="school.job.title">
             <field name="name">Accountant</field>
             <field name="department">finance</field>
+            <field name="responsibility">finance</field>
         </record>
         <record id="jt_finance_officer" model="school.job.title">
             <field name="name">Finance Officer</field>
             <field name="department">finance</field>
+            <field name="responsibility">finance</field>
         </record>
         <record id="jt_cashier" model="school.job.title">
             <field name="name">Cashier</field>
             <field name="department">finance</field>
+            <field name="responsibility">finance</field>
         </record>
 
         <!-- IT -->
         <record id="jt_it_support" model="school.job.title">
             <field name="name">IT Support Specialist</field>
             <field name="department">it</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_network_admin" model="school.job.title">
             <field name="name">Network Administrator</field>
             <field name="department">it</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_system_admin" model="school.job.title">
             <field name="name">System Administrator</field>
             <field name="department">it</field>
+            <field name="responsibility">other</field>
         </record>
 
         <!-- Library -->
         <record id="jt_librarian" model="school.job.title">
             <field name="name">Librarian</field>
             <field name="department">library</field>
+            <field name="responsibility">librarian</field>
         </record>
         <record id="jt_library_assistant" model="school.job.title">
             <field name="name">Library Assistant</field>
             <field name="department">library</field>
+            <field name="responsibility">librarian</field>
         </record>
 
         <!-- Facilities -->
         <record id="jt_maintenance_tech" model="school.job.title">
             <field name="name">Maintenance Technician</field>
             <field name="department">facilities</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_security_guard" model="school.job.title">
             <field name="name">Security Guard</field>
             <field name="department">facilities</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_janitor" model="school.job.title">
             <field name="name">Janitor</field>
             <field name="department">facilities</field>
+            <field name="responsibility">other</field>
         </record>
 
         <!-- Counseling -->
         <record id="jt_school_counselor" model="school.job.title">
             <field name="name">School Counselor</field>
             <field name="department">counseling</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_psychologist" model="school.job.title">
             <field name="name">Psychologist</field>
             <field name="department">counseling</field>
+            <field name="responsibility">other</field>
         </record>
 
         <!-- Sports -->
         <record id="jt_pe_teacher" model="school.job.title">
             <field name="name">Physical Education Teacher</field>
             <field name="department">sports</field>
+            <field name="responsibility">teacher</field>
         </record>
         <record id="jt_coach" model="school.job.title">
             <field name="name">Coach</field>
             <field name="department">sports</field>
+            <field name="responsibility">other</field>
         </record>
         <record id="jt_sports_coordinator" model="school.job.title">
             <field name="name">Sports Coordinator</field>
             <field name="department">sports</field>
+            <field name="responsibility">other</field>
         </record>
 
     </data>

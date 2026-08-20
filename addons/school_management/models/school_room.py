@@ -19,7 +19,11 @@ class SchoolRoom(models.Model):
     capacity = fields.Integer(string='Capacity')
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('room_name_unique', 'unique(name)', 'This room already exists.'),
-        ('capacity_positive', 'CHECK(capacity >= 0)', 'Capacity cannot be negative.'),
-    ]
+    _room_name_unique = models.Constraint(
+        'unique(name)',
+        'This room already exists.',
+    )
+    _capacity_positive = models.Constraint(
+        'CHECK(capacity >= 0)',
+        'Capacity cannot be negative.',
+    )

@@ -1,45 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-	<record id="action_report_school_report_card" model="ir.actions.report">
-		<field name="name">Student Report Card</field>
-		<field name="model">school.report.card</field>
-		<field name="report_type">qweb-pdf</field>
-		<field name="report_name">school_management.report_school_report_card</field>
-		<field name="report_file">school_management.report_school_report_card</field>
-		<field name="binding_model_id" ref="model_school_report_card"/>
-		<field name="binding_type">report</field>
-		<field name="print_report_name">'Report Card - %s' % (object.student_id.name)</field>
-	</record>
+    <!-- Report Card Report Action -->
+    <record id="action_report_school_report_card" model="ir.actions.report">
+        <field name="name">Student Report Card</field>
+        <field name="model">school.report.card</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_school_report_card</field>
+        <field name="report_file">school_management.report_school_report_card</field>
+        <field name="binding_model_id" ref="model_school_report_card"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Report Card - %s' % (object.student_id.name)</field>
+    </record>
 
-	<template id="report_school_report_card">
-		<t t-call="web.html_container">
-			<t t-foreach="docs" t-as="card">
-				<t t-call="web.external_layout">
-					<div class="page">
-						<h2>Student Report Card</h2>
-						<table class="table table-sm">
-							<tr><th>Student</th><td><span t-field="card.student_id.name"/></td><th>Class</th><td><span t-field="card.class_id"/></td></tr>
-							<tr><th>Academic Year</th><td><span t-field="card.academic_year_id"/></td><th>Term</th><td><span t-field="card.term_id"/></td></tr>
-						</table>
-						<table class="table table-sm">
-							<thead><tr><th>Subject</th><th>Percentage</th><th>Grade</th><th>Status</th></tr></thead>
-							<tbody>
-								<tr t-foreach="card.line_ids" t-as="line">
-									<td><span t-field="line.subject_id"/></td>
-									<td><span t-field="line.percentage"/></td>
-									<td><span t-field="line.grade"/></td>
-									<td><span t-field="line.result_status"/></td>
-								</tr>
-							</tbody>
-						</table>
-						<table class="table table-sm">
-							<tr><th>Overall Percentage</th><td><span t-field="card.overall_percentage"/></td><th>Overall Grade</th><td><span t-field="card.overall_grade"/></td></tr>
-							<tr><th>Result</th><td><span t-field="card.result_status"/></td><th>Class Rank</th><td><span t-field="card.class_rank"/></td></tr>
-							<tr><th>Attendance</th><td><span t-field="card.attendance_percentage"/></td><th>Promotion</th><td><span t-field="card.promotion_decision"/></td></tr>
-						</table>
-					</div>
-				</t>
-			</t>
-		</t>
-	</template>
+    <!-- Report Card PDF Template -->
+    <template id="report_school_report_card">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="card">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Student Report Card</h2>
+                        <table class="table table-sm">
+                            <tr><th>Student</th><td><span t-field="card.student_id.name"/></td><th>Class</th><td><span t-field="card.class_id"/></td></tr>
+                            <tr><th>Academic Year</th><td><span t-field="card.academic_year_id"/></td><th>Term</th><td><span t-field="card.term_id"/></td></tr>
+                        </table>
+                        <table class="table table-sm">
+                            <thead><tr><th>Subject</th><th>Percentage</th><th>Grade</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="card.line_ids" t-as="line">
+                                    <td><span t-field="line.subject_id"/></td>
+                                    <td><span t-field="line.percentage"/></td>
+                                    <td><span t-field="line.grade"/></td>
+                                    <td><span t-field="line.result_status"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm">
+                            <tr><th>Overall Percentage</th><td><span t-field="card.overall_percentage"/></td><th>Overall Grade</th><td><span t-field="card.overall_grade"/></td></tr>
+                            <tr><th>Result</th><td><span t-field="card.result_status"/></td><th>Class Rank</th><td><span t-field="card.class_rank"/></td></tr>
+                            <tr><th>Attendance</th><td><span t-field="card.attendance_percentage"/></td><th>Promotion</th><td><span t-field="card.promotion_decision"/></td></tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Student Profile Report Action: appears under Print menu on the student form -->
+    <record id="action_report_school_student" model="ir.actions.report">
+        <field name="name">Student Profile</field>
+        <field name="model">school.student</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_school_student_document</field>
+        <field name="report_file">school_management.report_school_student_document</field>
+        <field name="print_report_name">'Student Profile - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_school_student"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Student Profile Print Template -->
+    <template id="report_school_student_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 t-esc="doc.name"/>
+                        <p>Registration No: <span t-esc="doc.regno"/></p>
+
+                        <h4>Identity</h4>
+                        <table class="table table-sm">
+                            <tr><td>Date of Birth</td><td t-esc="doc.date_of_birth"/></tr>
+                            <tr><td>Age</td><td t-esc="doc.age"/></tr>
+                            <tr><td>Gender</td><td t-esc="doc.gender"/></tr>
+                            <tr><td>Nationality</td><td t-esc="doc.nationality_id.name"/></tr>
+                            <tr><td>Education Level</td><td t-esc="doc.education_level"/></tr>
+                            <tr><td>Admission Type</td><td t-esc="doc.admission_type"/></tr>
+                        </table>
+
+                        <h4>Placement</h4>
+                        <table class="table table-sm">
+                            <tr><td>Grade / Class</td><td t-esc="doc.class_id.name"/></tr>
+                            <tr><td>Academic Year</td><td t-esc="doc.academic_year_id.name"/></tr>
+                            <tr><td>Section</td><td t-esc="doc.section_id.name"/></tr>
+                            <tr><td>Registration Status</td><td t-esc="doc.registration_status"/></tr>
+                        </table>
+
+                        <h4>Parent / Guardian</h4>
+                        <table class="table table-sm">
+                            <tr><td>Name</td><td t-esc="doc.guardian_name"/></tr>
+                            <tr><td>Phone</td><td t-esc="doc.guardian_phone"/></tr>
+                            <tr><td>Address</td><td t-esc="doc.address"/></tr>
+                            <tr><td>Previous School</td><td t-esc="doc.previous_school"/></tr>
+                        </table>
+
+                        <h4>Emergency Contact</h4>
+                        <table class="table table-sm">
+                            <tr><td>Name</td><td t-esc="doc.emergency_contact_name"/></tr>
+                            <tr><td>Phone</td><td t-esc="doc.emergency_contact_phone"/></tr>
+                        </table>
+
+                        <h4>Enrollment History</h4>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Academic Year</th>
+                                    <th>Grade</th>
+                                    <th>Section</th>
+                                    <th>Roll Number</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="doc.enrollment_ids" t-as="enr">
+                                    <td t-esc="enr.academic_year_id.name"/>
+                                    <td t-esc="enr.class_id.grade_id.name"/>
+                                    <td t-esc="enr.class_id.section_id.name"/>
+                                    <td t-esc="enr.roll_number"/>
+                                    <td t-esc="enr.state"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
 </odoo>

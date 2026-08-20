@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Student Dashboard Form: read-only, priority 99 so it never becomes the default form -->
+    <record id="view_school_student_dashboard_form" model="ir.ui.view">
+        <field name="name">school.student.dashboard.form</field>
+        <field name="model">school.student</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Student Dashboard" edit="false" create="false" delete="false">
+                <header>
+                    <button name="action_print_student_report"
+                            type="object"
+                            string="Print"
+                            class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                        <h3>Registration No: <field name="regno" readonly="1"/></h3>
+                    </div>
+                    <group>
+                        <group string="Identity">
+                            <field name="date_of_birth" readonly="1"/>
+                            <field name="age" readonly="1"/>
+                            <field name="gender" readonly="1"/>
+                            <field name="nationality_id" readonly="1"/>
+                            <field name="education_level" readonly="1"/>
+                            <field name="admission_type" readonly="1"/>
+                        </group>
+                        <group string="Placement">
+                            <field name="class_id" readonly="1"/>
+                            <field name="academic_year_id" readonly="1"/>
+                            <field name="section_id" readonly="1"/>
+                            <field name="registration_status" widget="badge"
+                                   decoration-success="registration_status == 'approved'"
+                                   decoration-info="registration_status == 'submitted'"
+                                   decoration-muted="registration_status == 'draft'"
+                                   decoration-danger="registration_status == 'rejected'"/>
+                        </group>
+                    </group>
+                    <group string="Parent / Guardian">
+                        <field name="guardian_name" readonly="1"/>
+                        <field name="guardian_phone" readonly="1"/>
+                        <field name="address" readonly="1"/>
+                        <field name="previous_school" readonly="1"/>
+                    </group>
+                    <group string="Emergency Contact">
+                        <field name="emergency_contact_name" readonly="1"/>
+                        <field name="emergency_contact_phone" readonly="1"/>
+                    </group>
+                    <group string="Documents">
+                        <field name="birth_certificate" filename="birth_certificate_filename" readonly="1"/>
+                        <field name="birth_certificate_filename" invisible="1"/>
+                        <field name="previous_grade_document" filename="previous_grade_document_filename" readonly="1"/>
+                        <field name="previous_grade_document_filename" invisible="1"/>
+                    </group>
+                    <notebook>
+<page string="Enrollment History">
+    <field name="enrollment_ids" readonly="1">
+        <list>
+            <field name="name"/>
+            <field name="academic_year_id"/>
+            <field name="class_id"/>
+            <field name="roll_number"/>
+            <field name="state"/>
+        </list>
+    </field>
+</page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

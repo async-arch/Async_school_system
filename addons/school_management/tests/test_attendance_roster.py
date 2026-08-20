@@ -17,7 +17,16 @@ class TestAttendanceRoster(TransactionCase):
         self.today = fields.Date.context_today(self.env['school.attendance'])
         self.yesterday = self.today - timedelta(days=1)
         self.tomorrow = self.today + timedelta(days=1)
-        self.year = self.env['school.academic.year'].create({'name': '2092/2093'})
+        self.year = self.env['school.academic.year'].create({
+            'name': '2092/2093',
+            'date_start': self.today - timedelta(days=180),
+            'date_end': self.today + timedelta(days=180)})
+        # Attendance is only recorded on teaching days, so the year needs a term
+        # covering the dates these tests use.
+        self.env['school.term'].create({
+            'name': 'ATT Term', 'academic_year_id': self.year.id,
+            'date_start': self.today - timedelta(days=180),
+            'date_end': self.today + timedelta(days=180)})
         self.class_a = self.env['school.class'].create({
             'name': 'ATT Grade 1',
             'academic_year_id': self.year.id,
@@ -37,6 +46,7 @@ class TestAttendanceRoster(TransactionCase):
             'guardian_name': 'Guardian of %s' % name,
             'guardian_phone': '+251911440001',
             'class_id': self.class_a.id,
+            'academic_year_id': self.year.id,
             'birth_certificate': DUMMY_FILE,
             'registration_date': registration_date or self.today,
         })
@@ -84,6 +94,7 @@ class TestAttendanceRoster(TransactionCase):
             'guardian_name': 'Guardian',
             'guardian_phone': '+251911440002',
             'class_id': self.class_a.id,
+            'academic_year_id': self.year.id,
             'birth_certificate': DUMMY_FILE,
             'registration_status': 'approved',
         })
@@ -104,14 +115,15 @@ class TestAttendanceRoster(TransactionCase):
             'enrollment_id': old.id,
             'new_class_id': self.class_b.id,
             'effective_date': self.today,
+            'reason': 'Balance sections',
         })
         wizard.action_confirm()
 
-        self.assertEqual(old.state, 'transferred')
-        self.assertEqual(old.end_date, self.today)
-        new = student.enrollment_ids - old
-        self.assertEqual(new.state, 'active')
-        self.assertEqual(new.class_id, self.class_b)
+        self.assertEqual(old.state, 'active')
+        self.assertFalse(old.end_date)
+        self.assertEqual(len(student.enrollment_ids), 1)
+        self.assertEqual(len(old.placement_ids), 2)
+        self.assertEqual(old.class_id, self.class_b)
         self.assertEqual(student.class_id, self.class_b)
         self.assertEqual(history.class_id, self.class_a)
 
@@ -123,7 +135,7 @@ class TestAttendanceRoster(TransactionCase):
         registrar = self.env['res.users'].create({
             'name': 'ATT Registrar',
             'login': 'att_registrar',
-            'groups_id': [
+            'group_ids': [
                 (4, self.env.ref('base.group_user').id),
                 (4, self.env.ref('school_management.group_school_registrar').id),
             ],

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_school_grade_list" model="ir.ui.view">
+        <field name="name">school.grade.list</field>
+        <field name="model">school.grade</field>
+        <field name="arch" type="xml">
+            <list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="code"/><field name="level"/><field name="active"/></list>
+        </field>
+    </record>
+    <record id="action_school_grade" model="ir.actions.act_window">
+        <field name="name">Grades</field><field name="res_model">school.grade</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_school_shift_list" model="ir.ui.view">
+        <field name="name">school.shift.list</field><field name="model">school.shift</field>
+        <field name="arch" type="xml"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="code"/><field name="time_start" widget="float_time"/><field name="time_end" widget="float_time"/><field name="active"/></list></field>
+    </record>
+    <record id="action_school_shift" model="ir.actions.act_window">
+        <field name="name">Shifts</field><field name="res_model">school.shift</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_school_stream_list" model="ir.ui.view">
+        <field name="name">school.stream.list</field><field name="model">school.stream</field>
+        <field name="arch" type="xml"><list editable="bottom"><field name="sequence" widget="handle"/><field name="name"/><field name="code"/><field name="active"/></list></field>
+    </record>
+    <record id="action_school_stream" model="ir.actions.act_window">
+        <field name="name">Streams</field><field name="res_model">school.stream</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_school_document_list" model="ir.ui.view">
+        <field name="name">school.document.list</field><field name="model">school.document</field>
+        <field name="arch" type="xml"><list decoration-danger="state in ('rejected', 'expired')" decoration-success="state == 'verified'"><field name="name"/><field name="document_type_id"/><field name="student_id"/><field name="staff_id"/><field name="state" widget="badge"/><field name="expiry_date"/><field name="verified_by_id"/></list></field>
+    </record>
+    <record id="view_school_document_form" model="ir.ui.view">
+        <field name="name">school.document.form</field><field name="model">school.document</field>
+        <field name="arch" type="xml">
+            <form>
+                <header><button name="action_verify" type="object" string="Verify" class="btn-primary" invisible="state not in ('uploaded', 'rejected')"/><button name="action_reject" type="object" string="Reject" invisible="state != 'uploaded'"/><field name="state" widget="statusbar"/></header>
+                <sheet><group><group><field name="name"/><field name="document_type_id"/><field name="student_id"/><field name="staff_id"/><field name="guardian_id"/></group><group><field name="attachment_id"/><field name="sensitivity"/><field name="expiry_date"/><field name="checksum"/></group></group><field name="rejection_reason" invisible="state != 'rejected'"/></sheet><chatter/>
+            </form>
+        </field>
+    </record>
+    <record id="action_school_document" model="ir.actions.act_window">
+        <field name="name">Documents</field><field name="res_model">school.document</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="view_school_staff_daily_status_list" model="ir.ui.view">
+        <field name="name">school.staff.daily.status.list</field><field name="model">school.staff.daily.status</field>
+        <field name="arch" type="xml"><list editable="bottom"><field name="date"/><field name="staff_id"/><field name="status"/><field name="check_in"/><field name="check_out"/><field name="worked_hours"/></list></field>
+    </record>
+    <record id="action_school_staff_daily_status" model="ir.actions.act_window">
+        <field name="name">Staff Daily Status</field><field name="res_model">school.staff.daily.status</field><field name="view_mode">list,pivot,graph</field>
+    </record>
+
+    <record id="view_school_grading_scheme_form" model="ir.ui.view">
+        <field name="name">school.grading.scheme.form</field><field name="model">school.grading.scheme</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_use_for_report_cards" type="object"
+                            string="Use for Report Cards" class="btn-primary"
+                            invisible="is_company_scheme"
+                            groups="school_management.group_school_admin"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-success" role="alert" invisible="not is_company_scheme">This is the active grading scheme used to calculate report cards.</div>
+                    <div class="alert alert-info" role="alert">Add non-overlapping bands that cover the complete 0–100 range, save the scheme, then click <strong>Use for Report Cards</strong>.</div>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="pass_percentage" string="Pass Percentage (%)"/>
+                        </group>
+                        <group>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="is_company_scheme" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Grade Bands (Percentage)">
+                        <field name="band_ids">
+                            <list editable="bottom">
+                                <field name="name"/>
+                                <field name="minimum_percentage" string="Minimum (%)"/>
+                                <field name="maximum_percentage" string="Maximum (%)"/>
+                                <field name="remark"/>
+                            </list>
+                        </field>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="action_school_grading_scheme" model="ir.actions.act_window">
+        <field name="name">Grading Schemes</field><field name="res_model">school.grading.scheme</field><field name="view_mode">list,form</field>
+    </record>
+
+    <record id="action_school_report_card_generate" model="ir.actions.act_window">
+        <field name="name">Generate Report Card</field>
+        <field name="res_model">school.report.card.generate</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    <record id="view_school_report_card_list" model="ir.ui.view">
+        <field name="name">school.report.card.list</field><field name="model">school.report.card</field>
+        <field name="arch" type="xml"><list create="0" delete="0"><header><button name="%(action_school_report_card_generate)d" type="action" string="Generate Report Card" class="btn-primary" display="always" groups="school_management.group_school_admin,school_management.group_school_exam_officer"/></header><field name="name"/><field name="student_id"/><field name="term_id"/><field name="class_id"/><field name="version"/><field name="overall_average" string="Overall Average (%)"/><field name="class_rank" optional="show"/><field name="result"/><field name="state" widget="badge"/></list></field>
+    </record>
+    <record id="view_school_report_card_form" model="ir.ui.view">
+        <field name="name">school.report.card.form</field><field name="model">school.report.card</field>
+        <field name="arch" type="xml"><form create="0" delete="0"><header><button name="action_approve" type="object" string="Approve" invisible="state != 'draft'" groups="school_management.group_school_exam_officer"/><button name="action_publish" type="object" string="Publish" invisible="state != 'approved'" groups="school_management.group_school_exam_officer"/><button name="%(action_report_school_report_card)d" type="action" string="Print" invisible="state not in ('published', 'superseded')"/><field name="state" widget="statusbar"/></header><sheet><group><group><field name="name"/><field name="student_id"/><field name="enrollment_id"/><field name="term_id"/></group><group><field name="version"/><field name="grading_scheme_id"/><field name="overall_average" string="Overall Average (%)"/><field name="class_rank" invisible="not class_rank"/><field name="class_size" invisible="not class_rank"/><field name="result"/></group></group><group string="Approval"><field name="approved_by_id"/><field name="approved_at"/><field name="published_at"/><field name="correction_reason"/></group><group string="Subject Results"><field name="subject_results_html" nolabel="1" readonly="1"/></group><group string="Attendance"><field name="attendance_html" nolabel="1" readonly="1"/></group></sheet><chatter/></form></field>
+    </record>
+    <record id="view_school_report_card_generate_form" model="ir.ui.view">
+        <field name="name">school.report.card.generate.form</field>
+        <field name="model">school.report.card.generate</field>
+        <field name="arch" type="xml">
+            <form string="Generate Report Card">
+                <group>
+                    <div class="alert alert-info" role="alert" colspan="2">The average is calculated automatically as a percentage from this student's published marks for the selected term.</div>
+                    <field name="term_id" options="{'no_create': True}"/>
+                    <field name="student_id" options="{'no_create': True}"/>
+                    <field name="correction_reason" placeholder="Only needed when creating a corrected version"/>
+                </group>
+                <footer>
+                    <button name="action_generate" type="object" string="Generate Report Card" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    <record id="action_school_report_card" model="ir.actions.act_window">
+        <field name="name">Report Cards</field><field name="res_model">school.report.card</field><field name="view_mode">list,form</field>
+        <field name="help" type="html"><p class="o_view_nocontent_smiling_face">Generate a report card from published marks</p><p>Use <strong>Generate Report Card</strong>, then choose a term and student. Odoo calculates the overall percentage automatically.</p></field>
+    </record>
+
+    <record id="view_school_class_srs_form" model="ir.ui.view">
+        <field name="name">school.class.srs.form</field><field name="model">school.class</field><field name="inherit_id" ref="view_school_class_form"/>
+        <field name="arch" type="xml"><field name="section_id" position="before"><field name="grade_id" required="1" options="{'no_create': True}"/></field><field name="capacity" position="after"><field name="shift_id"/><field name="stream_id" invisible="grade_id.level not in ('11', '12')" required="grade_id.level in ('11', '12')"/><field name="campus_id"/><field name="homeroom_teacher_id"/></field></field>
+    </record>
+    <record id="view_school_term_srs_list" model="ir.ui.view">
+        <field name="name">school.term.srs.list</field><field name="model">school.term</field><field name="inherit_id" ref="view_school_term_tree"/>
+        <field name="arch" type="xml"><field name="name" position="after"><field name="academic_year_id"/><field name="date_start"/><field name="date_end"/></field></field>
+    </record>
+    <record id="view_school_academic_year_srs_form" model="ir.ui.view">
+        <field name="name">school.academic.year.srs.form</field><field name="model">school.academic.year</field><field name="inherit_id" ref="view_school_academic_year_form"/>
+        <field name="arch" type="xml"><sheet position="before"><header><button name="action_open" type="object" string="Open" invisible="state != 'draft'"/><button name="action_close" type="object" string="Close" invisible="state != 'open'"/><button name="action_archive_year" type="object" string="Archive" invisible="state != 'closed'"/><field name="state" widget="statusbar"/></header></sheet></field>
+    </record>
+
+    <menuitem id="menu_school_grade" name="Grades" parent="menu_school_administration" action="action_school_grade" sequence="30"/>
+    <menuitem id="menu_school_shift" name="Shifts" parent="menu_school_administration" action="action_school_shift" sequence="31"/>
+    <menuitem id="menu_school_stream" name="Streams" parent="menu_school_administration" action="action_school_stream" sequence="32"/>
+    <menuitem id="menu_school_document" name="Documents" parent="menu_school_administration" action="action_school_document" sequence="40"/>
+    <menuitem id="menu_school_grading_scheme" name="Grading Schemes" parent="menu_school_administration" action="action_school_grading_scheme" groups="school_management.group_school_admin,school_management.group_school_exam_officer" sequence="41"/>
+    <menuitem id="menu_school_report_card" name="Report Cards" parent="menu_school_root" action="action_school_report_card" groups="school_management.group_school_admin,school_management.group_school_exam_officer,school_management.group_school_registrar" sequence="35"/>
+    <menuitem id="menu_school_staff_daily_status" name="Staff Daily Status" parent="menu_school_administration" action="action_school_staff_daily_status" groups="school_management.group_school_hr,school_management.group_school_admin" sequence="50"/>
+</odoo>

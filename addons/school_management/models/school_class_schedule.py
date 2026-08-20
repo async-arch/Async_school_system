@@ -46,6 +46,12 @@ class SchoolClassSchedule(models.Model):
         ondelete='restrict', index=True, tracking=True,
     )
 
+    teacher_assignment_id = fields.Many2one(
+        'school.teacher.assignment', string='Teacher Assignment',
+        ondelete='restrict', index=True,
+        domain="[('class_id', '=', class_id), ('subject_id', '=', subject_id), ('term_id', '=', term_id), ('state', '=', 'active')]",
+    )
+
     subject_id = fields.Many2one(
         'school.subject', string='Subject',
         required=True, ondelete='restrict', tracking=True,
@@ -56,12 +62,8 @@ class SchoolClassSchedule(models.Model):
     )
 
     day_of_week = fields.Selection(
-        DAY_OF_WEEK, string='Day of Week', tracking=True,
-        help='Set for a class that repeats every week in this term.',
-    )
-    date = fields.Date(
-        string='Exact Date', tracking=True,
-        help='Set for a one-off session such as a makeup class or an examination.',
+        DAY_OF_WEEK, string='Day of Week', required=True, tracking=True,
+        help='The weekday this class repeats on for the whole term.',
     )
     start_time = fields.Float(string='Start Time', required=True, tracking=True)
     end_time = fields.Float(string='End Time', required=True, tracking=True)
@@ -87,51 +89,102 @@ class SchoolClassSchedule(models.Model):
     reschedule_reason = fields.Text(string='Reschedule Reason', tracking=True)
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('schedule_end_after_start', 'CHECK(end_time > start_time)',
-         'End time must be after the start time.'),
-        ('schedule_time_within_day', 'CHECK(start_time >= 0 AND end_time <= 24)',
-         'Times must fall between 00:00 and 24:00.'),
-    ]
+    @api.onchange('class_id')
+    def _onchange_class_id(self):
+        for rec in self:
+            if rec.term_id and rec.term_id.academic_year_id != rec.class_id.academic_year_id:
+                rec.term_id = False
+            if rec.subject_id and rec.class_id and not self.env['school.grade.subject'].search_count([
+                    ('class_id', '=', rec.class_id.id),
+                    ('subject_id', '=', rec.subject_id.id), ('active', '=', True)]):
+                rec.subject_id = False
+            rec.teacher_assignment_id = False
+            rec.teacher_id = False
 
-    @api.depends('subject_id', 'class_id', 'day_of_week', 'date', 'start_time')
+    @api.onchange('subject_id', 'term_id')
+    def _onchange_schedule_scope(self):
+        self.teacher_assignment_id = False
+        self.teacher_id = False
+        assignments = self._matching_assignments()
+        if len(assignments) == 1:
+            self.teacher_assignment_id = assignments
+            self.teacher_id = assignments.teacher_id
+
+    def _matching_assignments(self):
+        self.ensure_one()
+        if not (self.class_id and self.subject_id and self.term_id):
+            return self.env['school.teacher.assignment']
+        return self.env['school.teacher.assignment'].search([
+            ('class_id', '=', self.class_id.id),
+            ('subject_id', '=', self.subject_id.id),
+            ('term_id', '=', self.term_id.id),
+            ('state', '=', 'active'),
+        ])
+
+    @api.onchange('teacher_assignment_id')
+    def _onchange_teacher_assignment_id(self):
+        for rec in self.filtered('teacher_assignment_id'):
+            rec.class_id = rec.teacher_assignment_id.class_id
+            rec.subject_id = rec.teacher_assignment_id.subject_id
+            rec.term_id = rec.teacher_assignment_id.term_id
+            rec.teacher_id = rec.teacher_assignment_id.teacher_id
+
+    _schedule_end_after_start = models.Constraint(
+        'CHECK(end_time > start_time)',
+        'End time must be after the start time.',
+    )
+    _schedule_time_within_day = models.Constraint(
+        'CHECK(start_time >= 0 AND end_time <= 24)',
+        'Times must fall between 00:00 and 24:00.',
+    )
+
+    @api.depends('subject_id', 'class_id', 'day_of_week', 'start_time')
     def _compute_display_name(self):
         days = dict(DAY_OF_WEEK)
         for rec in self:
             if not rec.subject_id or not rec.class_id:
                 rec.display_name = _('New')
                 continue
-            when = fields.Date.to_string(rec.date) if rec.date else days.get(rec.day_of_week, '')
+            when = days.get(rec.day_of_week, '')
             hours, minutes = divmod(round(rec.start_time * 60), 60)
             rec.display_name = (
                 f'{rec.subject_id.name} - {rec.class_id.display_name} '
                 f'({when} {hours:02d}:{minutes:02d})'
             )
 
-    @api.constrains('day_of_week', 'date')
-    def _check_slot_is_set(self):
-        for rec in self:
-            if not rec.day_of_week and not rec.date:
-                raise ValidationError(
-                    'Set a day of week for a recurring class, or an exact date for a one-off session.'
-                )
-
-    @api.constrains('teacher_id', 'subject_id', 'class_id', 'term_id', 'academic_year_id')
+    @api.constrains('teacher_assignment_id', 'teacher_id', 'subject_id', 'class_id',
+                    'term_id', 'academic_year_id')
     def _check_teacher_assignment(self):
         for rec in self:
-            has_assignment = self.env['school.teacher.assignment'].search_count([
-                ('teacher_id', '=', rec.teacher_id.id),
-                ('subject_id', '=', rec.subject_id.id),
-                ('class_id', '=', rec.class_id.id),
-                ('academic_year_id', '=', rec.academic_year_id.id),
-                ('term_id', '=', rec.term_id.id),
-            ])
-            if not has_assignment:
+            assignment = rec.teacher_assignment_id
+            if assignment.teacher_id != rec.teacher_id \
+                    or assignment.subject_id != rec.subject_id \
+                    or assignment.class_id != rec.class_id \
+                    or assignment.academic_year_id != rec.academic_year_id \
+                    or assignment.term_id != rec.term_id \
+                    or assignment.state != 'active':
                 raise ValidationError(
-                    f'{rec.teacher_id.name} has no active assignment for '
-                    f'{rec.subject_id.name} in {rec.class_id.display_name} '
-                    f'({rec.academic_year_id.name}, {rec.term_id.name}).'
+                    'The schedule must use one exact active teacher assignment.'
                 )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('teacher_assignment_id') and all(
+                    vals.get(field) for field in ('teacher_id', 'subject_id', 'class_id', 'term_id')):
+                assignment = self.env['school.teacher.assignment'].search([
+                    ('teacher_id', '=', vals['teacher_id']),
+                    ('subject_id', '=', vals['subject_id']),
+                    ('class_id', '=', vals['class_id']),
+                    ('term_id', '=', vals['term_id']),
+                    ('state', '=', 'active'),
+                ], limit=1)
+                if assignment:
+                    vals['teacher_assignment_id'] = assignment.id
+            if not vals.get('teacher_assignment_id'):
+                raise ValidationError(
+                    'Select the exact active teacher assignment for this schedule.')
+        return super().create(vals_list)
 
     @api.constrains('state', 'teacher_id', 'subject_id', 'class_id')
     def _check_published_records_are_active(self):
@@ -153,7 +206,7 @@ class SchoolClassSchedule(models.Model):
                     'Give a reschedule reason. The previous day, date, and times stay in the log.'
                 )
 
-    @api.constrains('teacher_id', 'class_id', 'room_id', 'day_of_week', 'date',
+    @api.constrains('teacher_id', 'class_id', 'room_id', 'day_of_week',
                     'start_time', 'end_time', 'state', 'term_id', 'academic_year_id')
     def _check_no_double_booking(self):
         for rec in self:
@@ -180,13 +233,7 @@ class SchoolClassSchedule(models.Model):
             ('start_time', '<', self.end_time),
             ('end_time', '>', self.start_time),
         ]
-        if self.date:
-            return domain + [('date', '=', self.date)]
-        # ponytail: recurring slots only collide with recurring slots in the same term.
-        # A dated makeup class landing on a recurring weekday is not flagged — expand
-        # recurrences into concrete dates if that case starts to matter.
         return domain + [
-            ('date', '=', False),
             ('day_of_week', '=', self.day_of_week),
             ('academic_year_id', '=', self.academic_year_id.id),
             ('term_id', '=', self.term_id.id),

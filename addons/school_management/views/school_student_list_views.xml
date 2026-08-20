@@ -1,0 +1,10 @@
+<odoo>
+    <!-- Action -->
+    <record id="action_school_student_list" model="ir.actions.act_window">
+        <field name="name">Student List</field>
+        <field name="res_model">school.student</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+ 
+</odoo>

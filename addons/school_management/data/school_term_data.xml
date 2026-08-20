@@ -9,10 +9,16 @@
     <data noupdate="1">
         <record id="term_1" model="school.term">
             <field name="name">Term 1</field>
+            <field name="academic_year_id" ref="academic_year_2026_2027"/>
+            <field name="date_start">2026-09-01</field>
+            <field name="date_end">2027-01-31</field>
             <field name="sequence">10</field>
         </record>
         <record id="term_2" model="school.term">
             <field name="name">Term 2</field>
+            <field name="academic_year_id" ref="academic_year_2026_2027"/>
+            <field name="date_start">2027-02-01</field>
+            <field name="date_end">2027-06-30</field>
             <field name="sequence">20</field>
         </record>
 

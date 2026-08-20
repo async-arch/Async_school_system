@@ -3,12 +3,58 @@
         <field name="name">school.grade.subject.tree</field>
         <field name="model">school.grade.subject</field>
         <field name="arch" type="xml">
-            <tree editable="bottom">
-                <field name="class_id"/>
+            <list editable="bottom">
+                <field name="class_grade_level" column_invisible="True"/>
+                <field name="class_id" readonly="id"/>
                 <field name="subject_id"/>
+                <field name="stream_id" invisible="class_grade_level not in ('11', '12')"/>
                 <field name="subject_type"/>
+                <field name="maximum_mark"/>
+                <field name="pass_mark"/>
                 <field name="academic_year_id"/>
-            </tree>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_school_grade_subject_form" model="ir.ui.view">
+        <field name="name">school.grade.subject.form</field>
+        <field name="model">school.grade.subject</field>
+        <field name="arch" type="xml">
+            <form string="Curriculum Subject">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="subject_id" placeholder="Select a subject"
+                                   options="{'no_create': True}"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Academic Scope">
+                            <field name="class_grade_level" invisible="1"/>
+                            <field name="class_id" readonly="id" options="{'no_create': True}"/>
+                            <field name="grade_id" readonly="1"/>
+                            <field name="academic_year_id" readonly="1"/>
+                            <field name="stream_id"
+                                   invisible="class_grade_level not in ('11', '12')"
+                                   options="{'no_create': True}"/>
+                        </group>
+                        <group string="Subject Policy">
+                            <field name="subject_type"/>
+                            <field name="active" widget="boolean_toggle"/>
+                            <field name="optional_selection_limit"
+                                   invisible="subject_type not in ('optional', 'elective')"/>
+                        </group>
+                    </group>
+                    <group string="Maximum &amp; Pass Marks">
+                        <group>
+                            <field name="maximum_mark"/>
+                        </group>
+                        <group>
+                            <field name="pass_mark"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
         </field>
     </record>
 
@@ -21,7 +67,7 @@
                 <field name="subject_id"/>
                 <filter name="filter_compulsory" string="Compulsory" domain="[('subject_type', '=', 'compulsory')]"/>
                 <filter name="filter_optional" string="Optional" domain="[('subject_type', '=', 'optional')]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter name="group_class" string="Class" context="{'group_by': 'class_id'}"/>
                     <filter name="group_year" string="Academic Year" context="{'group_by': 'academic_year_id'}"/>
                 </group>
@@ -32,7 +78,7 @@
     <record id="action_school_grade_subject" model="ir.actions.act_window">
         <field name="name">Curriculum</field>
         <field name="res_model">school.grade.subject</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">list,form</field>
         <field name="context">{'search_default_group_class': 1}</field>
     </record>
 
@@ -40,13 +86,13 @@
         <field name="name">school.student.subject.tree</field>
         <field name="model">school.student.subject</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="student_id"/>
                 <field name="class_id"/>
                 <field name="subject_id"/>
                 <field name="subject_type"/>
                 <field name="state"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -59,7 +105,7 @@
                 <field name="subject_id"/>
                 <field name="class_id"/>
                 <filter name="filter_enrolled" string="Enrolled" domain="[('state', '=', 'enrolled')]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter name="group_class" string="Class" context="{'group_by': 'class_id'}"/>
                     <filter name="group_subject" string="Subject" context="{'group_by': 'subject_id'}"/>
                 </group>
@@ -70,7 +116,7 @@
     <record id="action_school_student_subject" model="ir.actions.act_window">
         <field name="name">Subject Enrollments</field>
         <field name="res_model">school.student.subject</field>
-        <field name="view_mode">tree</field>
+        <field name="view_mode">list</field>
         <field name="context">{'search_default_filter_enrolled': 1}</field>
     </record>
 </odoo>

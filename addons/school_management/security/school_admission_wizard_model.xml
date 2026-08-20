@@ -1,0 +1,8 @@
+<odoo>
+    <!-- Declare the wizard model so access rules can reference it -->
+    <record id="model_school_admission_wizard" model="ir.model">
+        <field name="name">school.admission.wizard</field>
+        <field name="model">school.admission.wizard</field>
+        <field name="state">manual</field>
+    </record>
+</odoo>

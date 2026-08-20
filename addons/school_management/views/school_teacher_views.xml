@@ -6,7 +6,7 @@
         <field name="name">school.teacher.tree</field>
         <field name="model">school.teacher</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="teacher_id"/>
                 <field name="name"/>
                 <field name="department"/>
@@ -17,7 +17,7 @@
                        decoration-success="teaching_status == 'active'"
                        decoration-danger="teaching_status == 'inactive'"
                        widget="badge"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -28,6 +28,9 @@
         <field name="priority">1</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_create_login_user" type="object" string="Create Login" class="oe_highlight" invisible="user_id"/>
+                </header>
                 <sheet>
                     <group>
                         <group>
@@ -37,34 +40,46 @@
                             <field name="department" readonly="1"/>
                             <field name="primary_responsibility" readonly="1"/>
                             <field name="teaching_status"/>
+                            <field name="user_id" string="Login User"/>
+                            <!-- widget="password", not password="True": the legacy
+                                 attribute only masks the input, while the widget adds
+                                 the reveal toggle needed to check a typed password. -->
+                            <field name="login_password" widget="password"
+                                   placeholder="8+ chars, upper, lower, number, symbol"/>
                         </group>
                         <group>
                             <field name="qualification"/>
                             <field name="specialization"/>
                             <field name="years_of_experience"/>
                             <field name="hire_date"/>
+                            <field name="available_days"/>
+                            <field name="max_weekly_workload"/>
                             <field name="active" widget="boolean_toggle"/>
                         </group>
                     </group>
-                    <group string="Availability">
-                        <field name="available_days"/>
-                        <field name="max_weekly_workload"/>
-                    </group>
                     <notebook>
                         <page string="Assignments">
+                            <!-- Same domains as the standalone Teacher Assignments form:
+                                 assignments created from here used to offer every subject
+                                 and every term, so a curriculum or academic-year mismatch
+                                 only surfaced as an error after saving. -->
                             <field name="assignment_ids">
-                                <tree editable="bottom">
-                                    <field name="subject_id"/>
+                                <list editable="bottom">
                                     <field name="class_id"/>
-                                    <field name="term_id"/>
+                                    <field name="academic_year_id" readonly="1" optional="show"/>
+                                    <field name="subject_id"
+                                           domain="[('grade_subject_ids.class_id', '=', class_id), ('active', '=', True)]"
+                                           options="{'no_create': True}"/>
+                                    <field name="term_id"
+                                           domain="[('academic_year_id', '=', academic_year_id), ('active', '=', True)]"
+                                           options="{'no_create': True}"/>
                                     <field name="responsibility"/>
                                     <field name="weekly_periods"/>
-                                    <field name="start_date"/>
-                                    <field name="end_date"/>
-                                </tree>
+                                </list>
                             </field>
                         </page>
                     </notebook>
+                    <chatter/>
                 </sheet>
             </form>
         </field>
@@ -89,7 +104,7 @@
                 <separator/>
                 <filter name="filter_archived" string="Archived"
                         domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
+                <group name="group_by">
                     <filter name="group_department" string="Department"
                             context="{'group_by': 'department'}"/>
                     <filter name="group_teaching_status" string="Teaching Status"
@@ -105,16 +120,22 @@
     <record id="action_school_teacher" model="ir.actions.act_window">
         <field name="name">Teachers</field>
         <field name="res_model">school.teacher</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="view_ids" eval="[
             (5, 0, 0),
-            (0, 0, {'view_mode': 'tree', 'view_id': ref('view_school_teacher_tree')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_school_teacher_tree')}),
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_school_teacher_form')})
         ]"/>
         <field name="search_view_id" ref="view_school_teacher_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Register a teacher profile linked to an active staff record!
+                No teacher profiles yet
+            </p>
+            <p>
+                First open <strong>Registrar → Staff</strong>. Create or open the
+                staff member, set the Department to <strong>Academic</strong>, add a
+                primary <strong>Teacher</strong> responsibility, then click
+                <strong>Activate</strong>. Return here and click New.
             </p>
         </field>
     </record>

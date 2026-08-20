@@ -30,9 +30,12 @@ jobs:
           echo "Odoo did not become ready in time"
           exit 1
 
-      - name: Install module with demo data and run tests
+      - name: Install Odoo 19 module with demo data and run tests
+        # A throwaway container, not `exec`: the service container already holds
+        # port 8069, so a second Odoo inside it cannot start.
         run: |
-          docker compose exec -T odoo odoo -c /etc/odoo/odoo.conf -d ci_test_db \
+          docker compose run --rm --no-deps -T odoo \
+            odoo -c /etc/odoo/odoo.conf -d ci_test_db \
             -i school_management \
             --test-enable --test-tags /school_management \
             --no-http --stop-after-init

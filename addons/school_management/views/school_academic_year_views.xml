@@ -5,13 +5,17 @@
         <field name="name">school.academic.year.tree</field>
         <field name="model">school.academic.year</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="date_start"/>
                 <field name="date_end"/>
-                <field name="class_count"/>
                 <field name="is_current"/>
-            </tree>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'draft'"
+                       decoration-success="state == 'open'"
+                       decoration-warning="state == 'closed'"
+                       decoration-muted="state == 'archived'"/>
+            </list>
         </field>
     </record>
 
@@ -19,14 +23,18 @@
         <field name="name">school.academic.year.form</field>
         <field name="model">school.academic.year</field>
         <field name="arch" type="xml">
-            <form>
+            <form string="Academic Year">
+                <header>
+                    <button name="action_open" type="object" string="Open"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_close" type="object" string="Close"
+                            class="oe_highlight" invisible="state != 'open'"/>
+                    <button name="action_archive_year" type="object" string="Archive"
+                            class="oe_highlight" invisible="state != 'closed'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,open,closed,archived"/>
+                </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_classes" type="object"
-                                class="oe_stat_button" icon="fa-graduation-cap">
-                            <field name="class_count" widget="statinfo" string="Classes"/>
-                        </button>
-                    </div>
                     <div class="oe_title">
                         <h1><field name="name" placeholder="2026/2027"/></h1>
                     </div>
@@ -41,6 +49,10 @@
                         </group>
                     </group>
                 </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
             </form>
         </field>
     </record>
@@ -60,11 +72,20 @@
     <record id="action_school_academic_year" model="ir.actions.act_window">
         <field name="name">Academic Years</field>
         <field name="res_model">school.academic.year</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_school_academic_year_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Add an academic year</p>
             <p>Classes, schedules, marks, and assignments all hang off these records.</p>
         </field>
     </record>
+
+    <menuitem id="menu_school_root" name="School"/>
+    <menuitem id="menu_school_academic" name="Academics" parent="menu_school_root" sequence="10"/>
+    <menuitem id="menu_school_academic_year"
+              name="Academic Years"
+              parent="menu_school_academic"
+              action="action_school_academic_year"
+              sequence="10"/>
 
 </odoo>

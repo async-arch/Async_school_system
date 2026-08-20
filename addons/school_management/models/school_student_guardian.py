@@ -32,10 +32,10 @@ class SchoolStudentGuardian(models.Model):
     name = fields.Char(related='partner_id.name', string='Name')
     phone = fields.Char(related='partner_id.phone', string='Phone')
 
-    _sql_constraints = [
-        ('student_partner_unique', 'unique(student_id, partner_id)',
-         'This contact is already linked to the student.'),
-    ]
+    _student_partner_unique = models.Constraint(
+        'unique(student_id, partner_id)',
+        'This contact is already linked to the student.',
+    )
 
     @api.constrains('is_primary', 'student_id')
     def _check_single_primary(self):

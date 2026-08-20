@@ -77,7 +77,7 @@ class SchoolDashboard(models.TransientModel):
             'type': 'ir.actions.act_window',
             'name': name,
             'res_model': model,
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': domain,
             'context': dict(context or {}, active_test=False),
         }

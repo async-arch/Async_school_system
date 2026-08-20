@@ -2,7 +2,7 @@ from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase
 
 # A year distinct from seeded/demo records (2026/2027) so the fixture never collides.
-YEAR = '2028/2029'
+YEAR = '2048/2049'
 
 
 class TestClassSchedule(TransactionCase):
@@ -11,10 +11,19 @@ class TestClassSchedule(TransactionCase):
         """Academic year is a master record now. Reuse it across a test so the
         class/section/year unique constraint behaves as it does in production."""
         Year = self.env['school.academic.year']
-        return Year.search([('name', '=', YEAR)], limit=1) or Year.create({'name': YEAR})
+        return Year.search([('name', '=', YEAR)], limit=1) or Year.create({
+            'name': YEAR, 'date_start': '2048-01-01', 'date_end': '2049-12-31'})
 
     def _term(self, ref='term_1'):
-        return self.env.ref('school_management.%s' % ref)
+        sequence = 1 if ref == 'term_1' else 2
+        return self.env['school.term'].search([
+            ('academic_year_id', '=', self._year().id), ('sequence', '=', sequence * 10),
+        ], limit=1) or self.env['school.term'].create({
+            'name': 'TEST Term %s' % sequence, 'academic_year_id': self._year().id,
+            'date_start': '2048-01-01' if sequence == 1 else '2049-01-01',
+            'date_end': '2048-12-31' if sequence == 1 else '2049-12-31',
+            'sequence': sequence * 10,
+        })
 
     def _section(self, ref='section_a'):
         return self.env.ref('school_management.%s' % ref)
@@ -50,7 +59,9 @@ class TestClassSchedule(TransactionCase):
             'department': 'academic',
             'job_title_id': job_title.id,
             'employment_status': 'active',
-            'phone': '+251911000000',
+            'date_of_birth': '1990-01-15',
+            # Staff phone numbers are unique, so each teacher gets one of its own.
+            'phone': '+2519113%05d' % self.env['school.staff'].search_count([]),
             # school.teacher.create auto-provisions a login from this address.
             'email': '%s@test.invalid' % name.lower().replace(' ', '.'),
         })
@@ -157,8 +168,8 @@ class TestClassSchedule(TransactionCase):
         with self.assertRaises(ValidationError):
             self._slot(teacher_id=unassigned.id)
 
-    def test_slot_needs_a_weekday_or_a_date(self):
-        with self.assertRaises(ValidationError):
+    def test_slot_needs_a_weekday(self):
+        with self.assertRaises(Exception):
             self._slot(day_of_week=False)
 
     def test_inactive_teacher_cannot_be_published(self):

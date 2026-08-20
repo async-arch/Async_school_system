@@ -8,15 +8,16 @@ class SchoolSubject(models.Model):
 
     name = fields.Char(string='Subject Name', required=True)
     code = fields.Char(string='Subject Code')
-    education_level = fields.Selection([
-        ('kindergarten', 'Kindergarten'),
-        ('primary', 'Primary'),
-        ('secondary', 'Secondary'),
-        ('high_school', 'High School'),
-    ], string='Education Level')
+    short_name = fields.Char()
+    subject_type = fields.Selection([
+        ('compulsory', 'Compulsory'), ('optional', 'Optional'),
+        ('stream', 'Stream'), ('elective', 'Elective'), ('non_graded', 'Non-Graded'),
+    ], default='compulsory', required=True)
     active = fields.Boolean(string='Active', default=True)
+    grade_subject_ids = fields.One2many(
+        'school.grade.subject', 'subject_id', string='Curriculum Offerings')
 
-    _sql_constraints = [
-        ('subject_name_unique', 'unique(name, education_level)',
-         'This subject already exists for this education level.'),
-    ]
+    _subject_name_unique = models.Constraint(
+        'unique(name)',
+        'A subject with that name already exists.',
+    )

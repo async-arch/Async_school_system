@@ -9,7 +9,7 @@
     -->
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ROOT                                                                 -->
+    <!--  ROOT                                                                  -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_root"
@@ -18,7 +18,7 @@
               sequence="10"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ADMIN — system overview, config                                      -->
+    <!--  ADMIN — system overview, config                                       -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_overview"
@@ -49,7 +49,7 @@
               sequence="20"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  DIRECTOR — approvals, dashboards                                     -->
+    <!--  DIRECTOR — approvals, dashboards                                      -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_director"
@@ -93,7 +93,7 @@
               sequence="30"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  REGISTRAR — students, classes, exams, scheduling                     -->
+    <!--  REGISTRAR — students, classes, exams, scheduling                      -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_registrar"
@@ -101,6 +101,18 @@
               parent="menu_school_root"
               groups="school_management.group_school_registrar,school_management.group_school_exam_officer"
               sequence="20"/>
+
+    <menuitem id="menu_school_admission_wizard"
+              name="Student Registration"
+              parent="menu_school_registrar"
+              action="action_school_admission_wizard"/>
+
+    <menuitem id="menu_school_student_list"
+              name="Student List"
+              parent="menu_school_registrar"
+              action="action_school_student_list"
+              groups="school_management.group_school_registrar"
+              sequence="11"/>
 
     <menuitem id="menu_school_assessment_marks"
               name="Assessments &amp; Marks"
@@ -256,7 +268,7 @@
               sequence="90"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  TEACHER — my work: timetable, attendance entry, mark entry           -->
+    <!--  TEACHER — my work: timetable, attendance entry, mark entry            -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_teacher_root"
@@ -315,7 +327,7 @@
               sequence="40"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  FINANCE — fee invoices and payments                                  -->
+    <!--  FINANCE — fee invoices and payments                                   -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_finance"
@@ -332,13 +344,13 @@
               sequence="10"/>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  FRONT OFFICE — communication, announcements, parent inquiries        -->
+    <!--  FRONT OFFICE — communication, announcements, parent inquiries         -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <menuitem id="menu_school_frontoffice"
               name="Communication"
               parent="menu_school_root"
-              groups="school_management.group_school_frontoffice"
+              groups="school_management.group_school_frontoffice,school_management.group_school_teacher,school_management.group_school_registrar,school_management.group_school_director"
               sequence="50"/>
 
     <menuitem id="menu_school_announcement"
@@ -352,7 +364,7 @@
               name="My Announcements"
               parent="menu_school_frontoffice"
               action="action_school_announcement_feed"
-              groups="school_management.group_school_frontoffice"
+              groups="school_management.group_school_frontoffice,school_management.group_school_teacher,school_management.group_school_registrar,school_management.group_school_director"
               sequence="20"/>
 
 </odoo>

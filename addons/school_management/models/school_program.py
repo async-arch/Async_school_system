@@ -75,10 +75,10 @@ class SchoolProgram(models.Model):
     description = fields.Html(string='Description')
     active = fields.Boolean(string='Active', default=True)
 
-    _sql_constraints = [
-        ('program_end_after_start', 'CHECK(end_datetime > start_datetime)',
-         'Program end must be after the start.'),
-    ]
+    _program_end_after_start = models.Constraint(
+        'CHECK(end_datetime > start_datetime)',
+        'Program end must be after the start.',
+    )
 
     @api.constrains('audience_type', 'department', 'responsibility',
                     'teacher_ids', 'subject_ids', 'class_ids', 'campus_ids', 'staff_ids')

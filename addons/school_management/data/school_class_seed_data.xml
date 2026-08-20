@@ -25,6 +25,7 @@
 
         <record id="class_grade_1" model="school.class">
             <field name="name">Grade 1</field>
+            <field name="grade_id" ref="grade_1"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">6</field>
@@ -32,6 +33,7 @@
         </record>
         <record id="class_grade_2" model="school.class">
             <field name="name">Grade 2</field>
+            <field name="grade_id" ref="grade_2"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">7</field>
@@ -39,6 +41,7 @@
         </record>
         <record id="class_grade_3" model="school.class">
             <field name="name">Grade 3</field>
+            <field name="grade_id" ref="grade_3"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">8</field>
@@ -46,6 +49,7 @@
         </record>
         <record id="class_grade_4" model="school.class">
             <field name="name">Grade 4</field>
+            <field name="grade_id" ref="grade_4"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">9</field>
@@ -53,6 +57,7 @@
         </record>
         <record id="class_grade_5" model="school.class">
             <field name="name">Grade 5</field>
+            <field name="grade_id" ref="grade_5"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">10</field>
@@ -60,6 +65,7 @@
         </record>
         <record id="class_grade_6" model="school.class">
             <field name="name">Grade 6</field>
+            <field name="grade_id" ref="grade_6"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">11</field>
@@ -67,6 +73,7 @@
         </record>
         <record id="class_grade_7" model="school.class">
             <field name="name">Grade 7</field>
+            <field name="grade_id" ref="grade_7"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">12</field>
@@ -74,6 +81,7 @@
         </record>
         <record id="class_grade_8" model="school.class">
             <field name="name">Grade 8</field>
+            <field name="grade_id" ref="grade_8"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">primary</field>
             <field name="min_age">13</field>
@@ -82,6 +90,7 @@
 
         <record id="class_grade_9" model="school.class">
             <field name="name">Grade 9</field>
+            <field name="grade_id" ref="grade_9"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">secondary</field>
             <field name="min_age">14</field>
@@ -89,6 +98,7 @@
         </record>
         <record id="class_grade_10" model="school.class">
             <field name="name">Grade 10</field>
+            <field name="grade_id" ref="grade_10"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">secondary</field>
             <field name="min_age">15</field>
@@ -97,6 +107,7 @@
 
         <record id="class_grade_11" model="school.class">
             <field name="name">Grade 11</field>
+            <field name="grade_id" ref="grade_11"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">high_school</field>
             <field name="min_age">16</field>
@@ -104,6 +115,7 @@
         </record>
         <record id="class_grade_12" model="school.class">
             <field name="name">Grade 12</field>
+            <field name="grade_id" ref="grade_12"/>
             <field name="academic_year_id" ref="academic_year_2026_2027"/>
             <field name="education_level">high_school</field>
             <field name="min_age">17</field>

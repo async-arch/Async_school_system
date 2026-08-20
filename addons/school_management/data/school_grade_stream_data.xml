@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Run on installs and upgrades. The method is idempotent and reuses
+         legacy/manual records before assigning stable XML IDs. -->
+    <function model="school.grade" name="ensure_standard_academic_structure"/>
+</odoo>

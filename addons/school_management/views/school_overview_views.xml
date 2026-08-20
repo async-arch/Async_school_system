@@ -94,41 +94,36 @@
                     </button>
                 </div>
             </sheet>
-            <xpath expr="//form" position="inside">
-                <div class="oe_chatter">
-                    <field name="message_follower_ids"/>
-                    <field name="message_ids"/>
-                </div>
-            </xpath>
         </field>
     </record>
 
     <!-- ======================================================= -->
     <!-- 3. CAMPUS EXTENSIONS: PROGRAMS & ANNOUNCEMENTS           -->
     <!-- ======================================================= -->
-    <record id="view_school_program_form_campus" model="ir.ui.view">
-        <field name="name">school.program.form.campus</field>
-        <field name="model">school.program</field>
-        <field name="inherit_id" ref="view_school_program_form"/>
-        <field name="arch" type="xml">
-            <field name="staff_ids" position="before">
-                <field name="campus_ids" widget="many2many_tags"
-                       invisible="audience_type != 'branch_campus'"
-                       required="audience_type == 'branch_campus'"/>
-            </field>
-        </field>
-    </record>
-
+   <record id="view_school_program_form_campus" model="ir.ui.view">
+    <field name="name">school.program.form.campus</field>
+    <field name="model">school.program</field>
+    <field name="inherit_id" ref="view_school_program_form"/>
+    <field name="arch" type="xml">
+        <xpath expr="//field[@name='staff_ids']" position="before">
+            <field name="campus_ids" 
+                   widget="many2many_tags" 
+                   invisible="audience_type != 'branch_campus'" 
+                   required="audience_type == 'branch_campus'"/>
+        </xpath>
+    </field>
+</record>
     <record id="view_school_announcement_form_campus" model="ir.ui.view">
         <field name="name">school.announcement.form.campus</field>
         <field name="model">school.announcement</field>
         <field name="inherit_id" ref="view_school_announcement_form"/>
         <field name="arch" type="xml">
-            <field name="staff_ids" position="before">
-                <field name="campus_ids" widget="many2many_tags"
-                       invisible="audience_type != 'branch_campus'"
-                       required="audience_type == 'branch_campus'"/>
-            </field>
+            <xpath expr="//field[@name='staff_ids']" position="before">
+                <field name="campus_ids" 
+       widget="many2many_tags" 
+       invisible="[('audience_type', '!=', 'branch_campus')]"
+       required="[('audience_type', '=', 'branch_campus')]"/>
+            </xpath>
         </field>
     </record>
 

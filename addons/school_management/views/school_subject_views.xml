@@ -3,12 +3,11 @@
         <field name="name">school.subject.tree</field>
         <field name="model">school.subject</field>
         <field name="arch" type="xml">
-            <tree>
+            <list>
                 <field name="name"/>
                 <field name="code"/>
-                <field name="education_level"/>
                 <field name="active"/>
-            </tree>
+            </list>
         </field>
     </record>
 
@@ -21,8 +20,7 @@
                     <group>
                         <field name="name"/>
                         <field name="code"/>
-                        <field name="education_level"/>
-                        <field name="active"/>
+                                <field name="active"/>
                     </group>
                 </sheet>
             </form>
@@ -38,8 +36,7 @@
                 <field name="code"/>
                 <filter string="Active" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Education Level" name="group_level" context="{'group_by': 'education_level'}"/>
+                <group name="group_by">
                 </group>
             </search>
         </field>
@@ -48,6 +45,6 @@
     <record id="action_school_subject" model="ir.actions.act_window">
         <field name="name">Subjects</field>
         <field name="res_model">school.subject</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
     </record>
 </odoo>
