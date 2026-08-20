@@ -9,8 +9,19 @@ ASSESSMENT_TYPES = [
     ('final', 'Final Exam'),
 ]
 
+# Default max_mark/weight per assessment_type — pre-fills the form field,
+# stays editable per-assessment for exceptions (SRS §9.1 keeps these
+# configurable; this is convenience, not a hard constraint).
+TYPE_DEFAULTS = {
+    'quiz': (5.0, 1.0),
+    'assignment': (15.0, 3.0),
+    'test': (10.0, 2.0),
+    'midterm': (20.0, 4.0),
+    'final': (50.0, 5.0),
+}
+
 # Setup is frozen once the mark list exists: rows were derived from it.
-SETUP_FIELDS = {'class_id', 'subject_id', 'term_id', 'date', 'max_mark', 'assessment_type'}
+SETUP_FIELDS = {'class_id', 'subject_id', 'term_id', 'date', 'max_mark', 'assessment_type', 'weight'}
 
 
 class SchoolAssessment(models.Model):
@@ -82,6 +93,11 @@ class SchoolAssessment(models.Model):
         for rec in self:
             rec.mark_count = len(rec.mark_ids)
 
+    @api.onchange('assessment_type')
+    def _onchange_assessment_type(self):
+        if self.assessment_type in TYPE_DEFAULTS:
+            self.max_mark, self.weight = TYPE_DEFAULTS[self.assessment_type]
+
     def _matching_assignment_domain(self):
         self.ensure_one()
         if not (self.class_id and self.subject_id and self.term_id and self.date):
@@ -93,7 +109,7 @@ class SchoolAssessment(models.Model):
             ('state', '=', 'active'),
             ('active', '=', True),
             ('start_date', '<=', self.date),
-            '|', ('end_date', '=', False), ('end_date', '>=', self.date),
+            ('|', ('end_date', '=', False), ('end_date', '>=', self.date)),
         ]
 
     @api.depends('class_id', 'subject_id', 'term_id', 'date')
@@ -185,7 +201,7 @@ class SchoolAssessment(models.Model):
                     ('term_id', '=', vals['term_id']),
                     ('state', '=', 'active'),
                     ('start_date', '<=', assessment_date),
-                    '|', ('end_date', '=', False), ('end_date', '>=', assessment_date),
+                    ('|', ('end_date', '=', False), ('end_date', '>=', assessment_date)),
                 ], limit=1)
                 if assignment:
                     vals['teacher_assignment_id'] = assignment.id
@@ -212,11 +228,10 @@ class SchoolAssessment(models.Model):
         if SETUP_FIELDS & vals.keys() and any(r.state != 'draft' for r in self):
             raise ValidationError(
                 'Assessment setup is frozen once the mark list is generated.')
-        # BR-11 / AC-13: only an Exam Officer moves a mark list past Submitted
-        # or reopens one, whichever path the write arrives through.
-        if vals.get('state') in ('approved', 'locked', 'published'):
+        new_state = vals.get('state')
+        if new_state in ('approved', 'locked', 'published'):
             self._require_exam_officer()
-        if vals.get('state') == 'open' and any(
+        if new_state == 'open' and any(
                 r.state not in ('draft', 'open') for r in self):
             self._require_exam_officer()
         return super().write(vals)
@@ -241,7 +256,7 @@ class SchoolAssessment(models.Model):
                 ('term_id', '=', rec.term_id.id),
                 ('state', '=', 'active'),
                 ('start_date', '<=', rec.date),
-                '|', ('end_date', '=', False), ('end_date', '>=', rec.date),
+                ('|', ('end_date', '=', False), ('end_date', '>=', rec.date)),
             ], limit=1)
             if not assigned:
                 raise ValidationError(
@@ -270,11 +285,11 @@ class SchoolAssessment(models.Model):
             ('subject_id', '=', self.subject_id.id),
             ('state', '=', 'enrolled'),
             ('date_start', '<=', self.date),
-            '|', ('date_end', '=', False), ('date_end', '>=', self.date),
+            ('|', ('date_end', '=', False), ('date_end', '>=', self.date),
             ('enrollment_id.state', '!=', 'draft'),
             ('enrollment_id.enrollment_date', '<=', self.date),
-            '|', ('enrollment_id.end_date', '=', False),
-                 ('enrollment_id.end_date', '>=', self.date),
+            ('|', ('enrollment_id.end_date', '=', False),
+                 ('enrollment_id.end_date', '>=', self.date)),
         ])
         listed = set(self.mark_ids.mapped('student_id').ids)
         vals_list = []
@@ -289,8 +304,6 @@ class SchoolAssessment(models.Model):
                 'mark_status': 'pending',
             })
         if vals_list:
-            # Rows are generated from subject enrollments, so they are created with
-            # elevated rights: a teacher may score a mark list, never hand-build one.
             self.env['school.mark'].sudo().create(vals_list)
 
     def action_open(self):
@@ -314,17 +327,35 @@ class SchoolAssessment(models.Model):
         self._require_assignment_owner()
         self._transition('open', 'submitted')
 
-    def action_return(self):
+    def action_open_return_wizard(self):
+        """Button target — opens the reason-prompt wizard. The actual state
+        change happens in action_return(), called from the wizard."""
+        self.ensure_one()
+        if self.state != 'submitted':
+            raise ValidationError('Only submitted assessments can be returned.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Return for Correction',
+            'res_model': 'school.assessment.return',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_assessment_id': self.id},
+        }
+
+    def action_return(self, reason):
+        """Returns a submitted assessment to open, with a required reason
+        posted to the chatter and audit event."""
         self._require_exam_officer()
         for rec in self:
             if rec.state != 'submitted':
                 raise ValidationError('Only submitted assessments can be returned.')
             rec.state = 'returned'
+            rec.message_post(body='Returned for correction: %s' % reason)
             self.env['school.assessment.event'].sudo().create({
                 'assessment_id': rec.id,
                 'event_type': 'returned',
                 'actor_id': self.env.user.id,
-                'reason': self.env.context.get('transition_reason'),
+                'reason': reason or self.env.context.get('transition_reason'),
             })
 
     def action_reopen(self):
@@ -424,3 +455,18 @@ class SchoolAssessmentUnlock(models.TransientModel):
             'reason': self.reason,
         })
         assessment.state = 'open'
+
+
+class SchoolAssessmentReturn(models.TransientModel):
+    """Thin UI wrapper — action_confirm just calls the real method."""
+    _name = 'school.assessment.return'
+    _description = 'Return Assessment for Correction'
+
+    assessment_id = fields.Many2one(
+        'school.assessment', string='Assessment', required=True,
+        domain=[('state', '=', 'submitted')])
+    reason = fields.Text(string='Reason', required=True)
+
+    def action_confirm(self):
+        self.ensure_one()
+        self.assessment_id.action_return(self.reason)

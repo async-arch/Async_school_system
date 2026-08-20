@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_school_report_card_tree" model="ir.ui.view">
+        <field name="name">school.report.card.tree</field>
+        <field name="model">school.report.card</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="result_status == 'pass'" decoration-danger="result_status == 'fail'">
+                <field name="name"/>
+                <field name="student_id"/>
+                <field name="enrollment_id"/>
+                <field name="class_id"/>
+                <field name="academic_year_id"/>
+                <field name="term_id"/>
+                <field name="overall_percentage" widget="percentage"/>
+                <field name="overall_grade"/>
+                <field name="result_status" widget="badge" decoration-success="result_status == 'pass'" decoration-danger="result_status == 'fail'" decoration-warning="result_status == 'incomplete'"/>
+                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'generated'" decoration-primary="state == 'approved'" decoration-success="state == 'published'"/>
+                <field name="class_rank"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_school_report_card_form" model="ir.ui.view">
+        <field name="name">school.report.card.form</field>
+        <field name="model">school.report.card</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_generate" type="object" string="Generate" class="oe_highlight" invisible="state not in ('draft', 'generated')"/>
+                    <button name="action_approve" type="object" string="Approve" class="oe_highlight" invisible="state != 'generated'" groups="school_management.group_school_admin,school_management.group_school_director,school_management.group_school_exam_officer"/>
+                    <button name="action_publish" type="object" string="Publish" class="oe_highlight" invisible="state != 'approved'" groups="school_management.group_school_admin,school_management.group_school_director,school_management.group_school_exam_officer"/>
+                    <button name="action_open_reopen_wizard" type="object" string="Reopen for Correction" invisible="state != 'published'" groups="school_management.group_school_admin,school_management.group_school_director,school_management.group_school_exam_officer"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,generated,approved,published"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Report Card Reference"/></h1>
+                    </div>
+                    <group>
+                        <group string="Scope">
+                            <field name="student_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="enrollment_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="class_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                            <field name="academic_year_id" readonly="1"/>
+                            <field name="term_id" readonly="state != 'draft'" options="{'no_create': True}"/>
+                        </group>
+                        <group string="Outcome">
+                            <field name="overall_percentage"/>
+                            <field name="overall_grade"/>
+                            <field name="result_status" widget="badge" decoration-success="result_status == 'pass'" decoration-danger="result_status == 'fail'" decoration-warning="result_status == 'incomplete'"/>
+                            <field name="complete"/>
+                            <field name="class_rank"/>
+                            <field name="promotion_decision" readonly="state == 'published'" widget="badge"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Subject Results" name="subject_results">
+                            <field name="line_ids" readonly="1">
+                                <tree create="0" delete="0" edit="0" decoration-success="passed" decoration-danger="not passed and result_status == 'fail'">
+                                    <field name="subject_id"/>
+                                    <field name="percentage"/>
+                                    <field name="grade"/>
+                                    <field name="passed"/>
+                                    <field name="result_status" widget="badge" decoration-success="result_status == 'pass'" decoration-danger="result_status == 'fail'" decoration-warning="result_status == 'incomplete'"/>
+                                    <field name="assessment_count"/>
+                                    <field name="weight_total"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Attendance Summary" name="attendance_summary">
+                            <group>
+                                <group>
+                                    <field name="attendance_present"/>
+                                    <field name="attendance_late"/>
+                                    <field name="attendance_absent"/>
+                                </group>
+                                <group>
+                                    <field name="attendance_not_recorded"/>
+                                    <field name="attendance_total"/>
+                                    <field name="attendance_percentage" widget="percentage"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_school_report_card_search" model="ir.ui.view">
+        <field name="name">school.report.card.search</field>
+        <field name="model">school.report.card</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="student_id"/>
+                <field name="class_id"/>
+                <field name="academic_year_id"/>
+                <field name="term_id"/>
+                <field name="state"/>
+                <filter name="draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="generated" string="Generated" domain="[('state', '=', 'generated')]"/>
+                <filter name="approved" string="Approved" domain="[('state', '=', 'approved')]"/>
+                <filter name="published" string="Published" domain="[('state', '=', 'published')]"/>
+                <separator/>
+                <filter name="incomplete" string="Incomplete" domain="[('complete', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_by_class" string="Class" domain="[]" context="{'group_by': 'class_id'}"/>
+                    <filter name="group_by_term" string="Term" domain="[]" context="{'group_by': 'term_id'}"/>
+                    <filter name="group_by_state" string="Status" domain="[]" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_school_report_card" model="ir.actions.act_window">
+        <field name="name">Report Cards</field>
+        <field name="res_model">school.report.card</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_school_report_card_search"/>
+    </record>
+</odoo>

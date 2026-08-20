@@ -1,6 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Report action: appears under Print menu on the student form -->
+    <!-- Report Card Report Action -->
+    <record id="action_report_school_report_card" model="ir.actions.report">
+        <field name="name">Student Report Card</field>
+        <field name="model">school.report.card</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">school_management.report_school_report_card</field>
+        <field name="report_file">school_management.report_school_report_card</field>
+        <field name="binding_model_id" ref="model_school_report_card"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Report Card - %s' % (object.student_id.name)</field>
+    </record>
+
+    <!-- Report Card PDF Template -->
+    <template id="report_school_report_card">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="card">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Student Report Card</h2>
+                        <table class="table table-sm">
+                            <tr><th>Student</th><td><span t-field="card.student_id.name"/></td><th>Class</th><td><span t-field="card.class_id"/></td></tr>
+                            <tr><th>Academic Year</th><td><span t-field="card.academic_year_id"/></td><th>Term</th><td><span t-field="card.term_id"/></td></tr>
+                        </table>
+                        <table class="table table-sm">
+                            <thead><tr><th>Subject</th><th>Percentage</th><th>Grade</th><th>Status</th></tr></thead>
+                            <tbody>
+                                <tr t-foreach="card.line_ids" t-as="line">
+                                    <td><span t-field="line.subject_id"/></td>
+                                    <td><span t-field="line.percentage"/></td>
+                                    <td><span t-field="line.grade"/></td>
+                                    <td><span t-field="line.result_status"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <table class="table table-sm">
+                            <tr><th>Overall Percentage</th><td><span t-field="card.overall_percentage"/></td><th>Overall Grade</th><td><span t-field="card.overall_grade"/></td></tr>
+                            <tr><th>Result</th><td><span t-field="card.result_status"/></td><th>Class Rank</th><td><span t-field="card.class_rank"/></td></tr>
+                            <tr><th>Attendance</th><td><span t-field="card.attendance_percentage"/></td><th>Promotion</th><td><span t-field="card.promotion_decision"/></td></tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- Student Profile Report Action: appears under Print menu on the student form -->
     <record id="action_report_school_student" model="ir.actions.report">
         <field name="name">Student Profile</field>
         <field name="model">school.student</field>
@@ -12,7 +57,7 @@
         <field name="binding_type">report</field>
     </record>
 
-    <!-- Print template -->
+    <!-- Student Profile Print Template -->
     <template id="report_school_student_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">

@@ -16,7 +16,8 @@ from . import school_hr
 from . import school_attendance
 from . import school_assessment
 from . import school_mark
-from . import school_results
+from . import school_result
+from . import school_report_card
 from . import school_subject
 from . import school_teacher
 from . import school_teacher_assignment

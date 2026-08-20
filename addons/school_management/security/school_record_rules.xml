@@ -11,7 +11,7 @@
     -->
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  STAFF                                                                -->
+    <!--  STAFF                                                                 -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_staff_all_registrar" model="ir.rule">
@@ -48,7 +48,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  TEACHER PROFILE                                                      -->
+    <!--  TEACHER PROFILE                                                       -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_school_teacher_read_own" model="ir.rule">
@@ -59,7 +59,7 @@
         <field name="perm_read" eval="True"/>
     </record>
 
-  <record id="rule_school_teacher_read_all_management" model="ir.rule">
+    <record id="rule_school_teacher_read_all_management" model="ir.rule">
         <field name="name">Teachers: Read All Profiles for Management</field>
         <field name="model_id" ref="model_school_teacher"/>
         <field name="domain_force">[(1, '=', 1)]</field>
@@ -71,10 +71,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  STUDENTS                                                             -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  STUDENTS                                                             -->
+    <!--  STUDENTS                                                              -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_student_all_registrar" model="ir.rule">
@@ -106,7 +103,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  GUARDIANS                                                            -->
+    <!--  GUARDIANS                                                             -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_guardian_all_registrar" model="ir.rule">
@@ -138,7 +135,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ENROLLMENTS                                                          -->
+    <!--  ENROLLMENTS                                                           -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_enrollment_all_registrar" model="ir.rule">
@@ -163,7 +160,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  CURRICULUM + SUBJECT ENROLLMENTS                                     -->
+    <!--  CURRICULUM + SUBJECT ENROLLMENTS                                      -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_grade_subject_all_registrar" model="ir.rule">
@@ -209,7 +206,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ATTENDANCE                                                           -->
+    <!--  ATTENDANCE                                                            -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_attendance_all_registrar" model="ir.rule">
@@ -234,7 +231,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  MARKS                                                                -->
+    <!--  MARKS                                                                 -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_mark_all_registrar" model="ir.rule">
@@ -255,11 +252,11 @@
         <field name="name">Marks: own class and subject only — Teacher</field>
         <field name="model_id" ref="model_school_mark"/>
         <field name="groups" eval="[(4, ref('school_management.group_school_teacher'))]"/>
-        <field name="domain_force">[('assessment_id.teacher_assignment_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ASSESSMENTS                                                          -->
+    <!--  ASSESSMENTS                                                           -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_assessment_all_registrar" model="ir.rule">
@@ -280,11 +277,11 @@
         <field name="name">Assessments: own class and subject only — Teacher</field>
         <field name="model_id" ref="model_school_assessment"/>
         <field name="groups" eval="[(4, ref('school_management.group_school_teacher'))]"/>
-        <field name="domain_force">[('teacher_assignment_id.teacher_id.user_id', '=', user.id)]</field>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  CLASS SCHEDULE                                                       -->
+    <!--  CLASS SCHEDULE                                                        -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_schedule_all_registrar" model="ir.rule">
@@ -309,7 +306,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  TEACHER ASSIGNMENT                                                   -->
+    <!--  TEACHER ASSIGNMENT                                                    -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <!-- Registrar: manage all assignments -->
@@ -337,7 +334,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  ANNOUNCEMENTS                                                        -->
+    <!--  ANNOUNCEMENTS                                                         -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_announcement_all_registrar" model="ir.rule">
@@ -369,7 +366,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  PROGRAMS                                                             -->
+    <!--  PROGRAMS                                                              -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_program_all_registrar" model="ir.rule">
@@ -397,7 +394,7 @@
     </record>
 
     <!-- ══════════════════════════════════════════════════════════════════════ -->
-    <!--  CLASSES                                                              -->
+    <!--  CLASSES                                                               -->
     <!-- ══════════════════════════════════════════════════════════════════════ -->
 
     <record id="rule_class_own_teacher" model="ir.rule">

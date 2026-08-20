@@ -37,6 +37,10 @@ class SchoolGradeSubject(models.Model):
         ('elective', 'Elective'),
         ('non_graded', 'Non-Graded'),
     ], string='Type', required=True, default='compulsory')
+    grading_policy_id = fields.Many2one(
+        'school.grading.policy', string='Grading Policy', ondelete='restrict',
+        help='Optional subject-specific grading policy. The default policy is used when empty.',
+    )
     maximum_mark = fields.Float(default=100.0, required=True)
     pass_mark = fields.Float(default=50.0, required=True)
     optional_selection_limit = fields.Integer(default=0)

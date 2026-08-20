@@ -77,7 +77,7 @@ class SchoolTeacherAssignment(models.Model):
                 ('state', '=', 'active'),
                 ('active', '=', True),
                 ('start_date', '<=', rec.end_date or fields.Date.to_date('9999-12-31')),
-                '|', ('end_date', '=', False), ('end_date', '>=', rec.start_date),
+                ('|', ('end_date', '=', False), ('end_date', '>=', rec.start_date)),
             ], limit=1)
             if clash:
                 raise ValidationError(
@@ -99,7 +99,7 @@ class SchoolTeacherAssignment(models.Model):
                 ('term_id', '=', rec.term_id.id),
                 ('state', '=', 'active'), ('active', '=', True),
                 ('start_date', '<=', rec.end_date or fields.Date.to_date('9999-12-31')),
-                '|', ('end_date', '=', False), ('end_date', '>=', rec.start_date),
+                ('|', ('end_date', '=', False), ('end_date', '>=', rec.start_date)),
             ], limit=1)
             if clash:
                 raise ValidationError(
@@ -156,6 +156,7 @@ class SchoolTeacherAssignment(models.Model):
                 raise ValidationError(
                     '%s is not on the curriculum of %s.' % (
                         rec.subject_id.name, rec.class_id.display_name))
+
     @api.constrains('start_date', 'end_date')
     def _check_dates(self):
         for rec in self:
@@ -190,6 +191,7 @@ class SchoolTeacherAssignment(models.Model):
                     'This assignment brings %s to %s weekly periods, exceeding their maximum of %s.'
                     % (rec.teacher_id.name, total, rec.teacher_id.max_weekly_workload)
                 )
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

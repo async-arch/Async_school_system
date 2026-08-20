@@ -141,6 +141,25 @@
         ]"/>
         <field name="comment">Full access: user management, Telegram bot config, system backups, all records.</field>
     </record>
+    <!-- Assessment rules added by naz -->
+<!-- ── Record Rules ─────────────────────────────────────────────────────── -->
+    <!-- Teachers see/edit only assessments and marks for their own active      -->
+    <!-- class+subject assignments (SRS §3.2, AC-12). No rule needed for        -->
+    <!-- admin/registrar/exam_officer/director — a group with zero rules on a  -->
+    <!-- model gets unrestricted access by default.                            -->
+    <record id="rule_school_assessment_teacher" model="ir.rule">
+        <field name="name">Teacher: own subject/class assessments only</field>
+        <field name="model_id" ref="model_school_assessment"/>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
+        <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+    </record>
+
+    <record id="rule_school_mark_teacher" model="ir.rule">
+        <field name="name">Teacher: own subject/class marks only</field>
+        <field name="model_id" ref="model_school_mark"/>
+        <field name="domain_force">user._school_teacher_pair_domain()</field>
+        <field name="groups" eval="[(4, ref('group_school_teacher'))]"/>
+    </record>
 
     <!-- Odoo's built-in admin user always holds the School Administrator role. -->
     <record id="base.user_admin" model="res.users">

@@ -17,6 +17,8 @@ class SchoolTerm(models.Model):
     date_start = fields.Date(required=True)
     date_end = fields.Date(required=True)
     sequence = fields.Integer(string='Sequence', default=10)
+    start_date = fields.Date(string='Start Date')
+    end_date = fields.Date(string='End Date')
     active = fields.Boolean(string='Active', default=True)
 
     _name_year_unique = models.Constraint(
@@ -36,6 +38,12 @@ class SchoolTerm(models.Model):
                 raise ValidationError('The term cannot start before its academic year.')
             if year.date_end and rec.date_end > year.date_end:
                 raise ValidationError('The term cannot end after its academic year.')
+
+    @api.constrains('start_date', 'end_date')
+    def _check_dates(self):
+        for rec in self:
+            if rec.start_date and rec.end_date and rec.end_date < rec.start_date:
+                raise ValidationError('Term end date cannot be before its start date.')
 
 
 class SchoolSection(models.Model):
