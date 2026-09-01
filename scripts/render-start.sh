@@ -68,6 +68,55 @@ workers = 0
 max_cron_threads = 1
 CONF_EOF
 
+# Neon's pooled endpoint breaks Odoo: it keeps session-level state and the demo
+# seeder takes a pg_advisory_xact_lock, neither of which survives transaction
+# pooling. The failure comes later and looks like something else, so name it now.
+case "$DB_HOST" in
+    *-pooler.*)
+        echo "render-start: WARNING $DB_HOST is Neon's POOLED endpoint." >&2
+        echo "render-start: WARNING Use the direct host — the same name without '-pooler'." >&2
+        echo "render-start: WARNING Odoo holds session state and the seeder takes a" >&2
+        echo "render-start: WARNING pg_advisory_xact_lock; transaction pooling breaks both." >&2
+        ;;
+esac
+
+# An empty database is the one failure this script can report better than Odoo
+# can. Odoo starts anyway and answers every request with HTTP 500 and
+# KeyError: 'ir.http', which says nothing about the cause; the one line that
+# does is buried in the boot log.
+schema_state=$(
+    python3 - <<'PY' || echo unknown
+import os, sys
+try:
+    import psycopg2
+    connection = psycopg2.connect(
+        host=os.environ['DB_HOST'], port=os.environ['DB_PORT'],
+        dbname=os.environ['DB_NAME'], user=os.environ['DB_USER'],
+        password=os.environ['DB_PASSWORD'], sslmode='require',
+        connect_timeout=15,
+    )
+    with connection, connection.cursor() as cursor:
+        cursor.execute("SELECT to_regclass('public.ir_module_module') IS NOT NULL")
+        print('initialized' if cursor.fetchone()[0] else 'empty')
+    connection.close()
+except Exception as exc:
+    # Never echo the exception itself: a connection error can carry the DSN.
+    print('unknown')
+    print('render-start: preflight query failed (%s); leaving the decision to '
+          'Odoo.' % type(exc).__name__, file=sys.stderr)
+PY
+)
+
+if [ "$schema_state" = "empty" ] && [ -z "${ODOO_INIT:-}" ]; then
+    fail "database '$DB_NAME' on $DB_HOST has no Odoo schema.
+
+  Set ODOO_INIT=school_management in the Render dashboard, deploy once, then
+  REMOVE the variable and deploy again.
+
+  Starting without it leaves every request returning HTTP 500 with
+  KeyError: 'ir.http', because there is no ir_module_module table to load."
+fi
+
 # One-off database initialization.
 #
 # Render's free plan gives no shell, and initializing over the internet from a
