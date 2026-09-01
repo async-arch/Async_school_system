@@ -38,8 +38,12 @@ services:
         sync: false
       - key: DB_PORT
         value: "5432"
+      # Not pinned here: the database is named per environment — Neon hands a
+      # new project a `neondb` by default, and an existing service may already
+      # be on another name. Hard-coding one meant syncing this blueprint would
+      # repoint a running service at a database that does not exist.
       - key: DB_NAME
-        value: school
+        sync: false
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
