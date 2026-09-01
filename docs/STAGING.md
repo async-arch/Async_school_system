@@ -140,6 +140,15 @@ FROM ir_attachment WHERE url LIKE '/web/assets/%';
    laptop is impractically slow — an Odoo install issues tens of thousands of
    small queries and each pays the round trip. The container sits in the same
    region as the database and does the same work in minutes.
+
+   > Measured from a developer laptop to a Neon project in `us-east-2`: **181 ms
+   > per statement**. At tens of thousands of statements that is hours, which is
+   > why this is the supported path and section 2 is the fallback.
+
+   Forgetting this step is the failure it exists to prevent, so the startup
+   script now checks for it: if the database has no `ir_module_module` table and
+   `ODOO_INIT` is unset, the deploy fails immediately naming the remedy, instead
+   of booting an Odoo that answers every request with `KeyError: 'ir.http'`.
 4. Deploy. The first build takes several minutes. Watch the log for
    `Modules loaded.`, then the health check turns green.
 5. **Remove `ODOO_INIT` and deploy again.** Left set, it reinstalls on every boot.
