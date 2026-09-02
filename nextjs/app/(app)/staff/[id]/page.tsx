@@ -234,10 +234,40 @@ export default async function StaffDetailPage({ params }: PageProps<'/staff/[id]
                 </Row>
               </DataTable>
             ) : (
+              /*
+                Whether this staff member could hold a profile is the same rule
+                Odoo enforces in _check_staff_active. Saying which part they
+                fail — and offering the action that fixes it — is the whole
+                difference between a dead end and a next step.
+              */
               <EmptyState
                 icon="teachers"
                 title="No teaching profile"
-                hint="Odoo only accepts a teacher profile on an active staff member in the academic department, or one holding a teaching responsibility."
+                hint={
+                  state !== 'active'
+                    ? `Odoo accepts a teaching profile only on an active staff member. This record is ${state || 'not active'}.`
+                    : staff.employment_status !== 'active'
+                      ? `Odoo accepts a teaching profile only while employment is active. This record is ${formatSelection(staff.employment_status)}.`
+                      : staff.department !== 'academic' &&
+                          !['teacher', 'homeroom', 'department_head', 'coordinator'].includes(
+                            String(staff.primary_responsibility),
+                          )
+                        ? 'Odoo accepts a teaching profile only in the academic department, or with a teaching responsibility. Add one above.'
+                        : 'This staff member is eligible — create their teaching profile.'
+                }
+                action={
+                  canWrite &&
+                  state === 'active' &&
+                  staff.employment_status === 'active' &&
+                  (staff.department === 'academic' ||
+                    ['teacher', 'homeroom', 'department_head', 'coordinator'].includes(
+                      String(staff.primary_responsibility),
+                    )) ? (
+                    <LinkButton href="/teachers/new" variant="primary" icon="plus" size="sm">
+                      Create teaching profile
+                    </LinkButton>
+                  ) : undefined
+                }
               />
             )}
           </TableCard>
