@@ -1,6 +1,7 @@
 import 'server-only'
 import { callKw, create, readOne, searchRead, write } from '@/lib/odoo/client'
 import { orNullOnRefusal } from '@/lib/odoo/errors'
+import { listDomain, type ListOptions } from '@/lib/odoo/list'
 import type { Many2one, Page, Selection } from '@/lib/odoo/types'
 
 /**
@@ -35,20 +36,22 @@ const ATTENDANCE_FIELDS = [
   'note',
 ] as const
 
-export function listAttendance(options: {
-  classId?: number
-  date?: string
-  limit?: number
-  offset?: number
-} = {}): Promise<Page<AttendanceRow>> {
-  const domain: unknown[] = []
-  if (options.classId) domain.push(['class_id', '=', options.classId])
-  if (options.date) domain.push(['date', '=', options.date])
+export const ATTENDANCE_FILTERS = {
+  date: { field: 'date', kind: 'date' },
+  class: { field: 'class_id', kind: 'many2one' },
+  status: { field: 'status' },
+  type: { field: 'attendance_type' },
+} as const
+
+export function listAttendance(options: ListOptions = {}): Promise<Page<AttendanceRow>> {
   return searchRead<AttendanceRow>('school.attendance', ATTENDANCE_FIELDS, {
-    domain,
-    limit: options.limit ?? 100,
+    domain: listDomain(options, {
+      searchFields: ['student_id.name'],
+      filters: ATTENDANCE_FILTERS,
+    }),
+    limit: options.limit ?? 50,
     offset: options.offset ?? 0,
-    order: 'date desc, student_id',
+    order: options.order ?? 'date desc, student_id',
   })
 }
 
@@ -107,12 +110,42 @@ const SCHEDULE_FIELDS = [
   'state',
 ] as const
 
-export function listSchedule(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<ScheduleRow>
-> {
+export const SCHEDULE_FILTERS = {
+  status: { field: 'state' },
+  day: { field: 'day_of_week' },
+  type: { field: 'schedule_type' },
+  class: { field: 'class_id', kind: 'many2one' },
+  subject: { field: 'subject_id', kind: 'many2one' },
+} as const
+
+export function listSchedule(options: ListOptions = {}): Promise<Page<ScheduleRow>> {
   return searchRead<ScheduleRow>('school.class.schedule', SCHEDULE_FIELDS, {
-    limit: options.limit ?? 100,
+    domain: listDomain(options, { filters: SCHEDULE_FILTERS }),
+    limit: options.limit ?? 50,
     offset: options.offset ?? 0,
+    order: options.order ?? 'day_of_week, start_time',
+  })
+}
+
+/**
+ * Every slot for one class and term, for the weekly grid.
+ *
+ * The grid needs the whole week at once rather than a page of it, so this is
+ * the one schedule read that is deliberately unpaged — a week is bounded by
+ * days times periods, not by how much data exists.
+ */
+export function listScheduleGrid(options: {
+  classId?: number
+  teacherId?: number
+  termId?: number
+}): Promise<Page<ScheduleRow>> {
+  const domain: unknown[] = [['state', '!=', 'cancelled']]
+  if (options.classId) domain.push(['class_id', '=', options.classId])
+  if (options.teacherId) domain.push(['teacher_id', '=', options.teacherId])
+  if (options.termId) domain.push(['term_id', '=', options.termId])
+  return searchRead<ScheduleRow>('school.class.schedule', SCHEDULE_FIELDS, {
+    domain,
+    limit: 400,
     order: 'day_of_week, start_time',
   })
 }
@@ -165,13 +198,34 @@ const ANNOUNCEMENT_FIELDS = [
   'is_live',
 ] as const
 
-export function listAnnouncements(options: { limit?: number } = {}): Promise<
-  Page<AnnouncementRow>
-> {
+export const ANNOUNCEMENT_FILTERS = {
+  status: { field: 'state' },
+  category: { field: 'category' },
+  audience: { field: 'audience_type' },
+  priority: { field: 'priority' },
+} as const
+
+export function listAnnouncements(options: ListOptions = {}): Promise<Page<AnnouncementRow>> {
   return searchRead<AnnouncementRow>('school.announcement', ANNOUNCEMENT_FIELDS, {
-    limit: options.limit ?? 50,
-    order: 'publish_datetime desc',
+    domain: listDomain(options, {
+      searchFields: ['name'],
+      filters: ANNOUNCEMENT_FILTERS,
+    }),
+    limit: options.limit ?? 25,
+    offset: options.offset ?? 0,
+    order: options.order ?? 'publish_datetime desc',
   })
+}
+
+/** Live announcements for a dashboard panel. `is_live` has a search method. */
+export function listLiveAnnouncements(limit = 4): Promise<Page<AnnouncementRow> | null> {
+  return orNullOnRefusal(
+    searchRead<AnnouncementRow>('school.announcement', ANNOUNCEMENT_FIELDS, {
+      domain: [['is_live', '=', true]],
+      limit,
+      order: 'priority desc, publish_datetime desc',
+    }),
+  )
 }
 
 export function getAnnouncement(
@@ -205,10 +259,18 @@ const PROGRAM_FIELDS = [
   'state',
 ] as const
 
-export function listPrograms(options: { limit?: number } = {}): Promise<Page<ProgramRow>> {
+export const PROGRAM_FILTERS = {
+  status: { field: 'state' },
+  type: { field: 'program_type' },
+  audience: { field: 'audience_type' },
+} as const
+
+export function listPrograms(options: ListOptions = {}): Promise<Page<ProgramRow>> {
   return searchRead<ProgramRow>('school.program', PROGRAM_FIELDS, {
-    limit: options.limit ?? 50,
-    order: 'start_datetime desc',
+    domain: listDomain(options, { searchFields: ['name', 'location'], filters: PROGRAM_FILTERS }),
+    limit: options.limit ?? 25,
+    offset: options.offset ?? 0,
+    order: options.order ?? 'start_datetime desc',
   })
 }
 
@@ -243,10 +305,20 @@ const DOCUMENT_FIELDS = [
   'rejection_reason',
 ] as const
 
-export function listDocuments(options: { limit?: number } = {}): Promise<Page<DocumentRow>> {
+export const DOCUMENT_FILTERS = {
+  status: { field: 'state' },
+  type: { field: 'document_type_id', kind: 'many2one' },
+} as const
+
+export function listDocuments(options: ListOptions = {}): Promise<Page<DocumentRow>> {
   return searchRead<DocumentRow>('school.document', DOCUMENT_FIELDS, {
-    limit: options.limit ?? 50,
-    order: 'id desc',
+    domain: listDomain(options, {
+      searchFields: ['name', 'student_id.name', 'staff_id.name'],
+      filters: DOCUMENT_FILTERS,
+    }),
+    limit: options.limit ?? 25,
+    offset: options.offset ?? 0,
+    order: options.order ?? 'id desc',
   })
 }
 

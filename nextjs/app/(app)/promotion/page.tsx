@@ -1,40 +1,75 @@
-import Link from 'next/link'
-import {
-  StatusBadge,
-} from '@/components/ui'
-import { Cell, ResourceList } from '@/components/resource-list'
+import { StatusBadge } from '@/components/ui'
+import { ResourceList } from '@/components/resource-list'
+import { RowLink } from '@/components/ui/table'
+import { toOdooOrder } from '@/lib/list-query'
+import { gradeOptions } from '@/lib/odoo/filter-options'
 import { listPromotionBatches } from '@/lib/odoo/models/assessment'
+import { selectionOptions } from '@/lib/odoo/selections'
 import { m2oLabel } from '@/lib/odoo/types'
 
 export const metadata = { title: 'Promotion · Async School' }
 
+export default async function PromotionPage({ searchParams }: PageProps<'/promotion'>) {
+  const [states, grades] = await Promise.all([
+    selectionOptions('school.promotion.batch', 'state'),
+    gradeOptions(),
+  ])
 
-export default function PromotionPage() {
   return (
     <ResourceList
       title="Promotion"
+      icon="promotion"
+      basePath="/promotion"
+      searchParams={searchParams}
       subtitle="Odoo calculates each outcome from published results, then applies the batch."
-      load={listPromotionBatches}
-      columns={['Batch', 'From year', 'To year', 'Grade', 'Students', 'Promoted', 'Retained', 'Status']}
+      search={{ placeholder: 'Batch name' }}
+      filters={[
+        { key: 'status', label: 'Status', options: states },
+        { key: 'grade', label: 'Grade', options: grades },
+      ]}
+      load={(query) =>
+        listPromotionBatches({
+          search: query.search,
+          filters: query.filters,
+          order: toOdooOrder(query),
+          limit: query.limit,
+          offset: query.offset,
+        })
+      }
+      rowHref={(row) => `/promotion/${row.id}`}
       emptyTitle="No promotion batches visible"
-      renderRow={(row) => (
-        <>
-          <Cell strong>
-            <Link href={`/promotion/${row.id}`} className="hover:text-action-blue">
-              {row.name}
-            </Link>
-          </Cell>
-          <Cell>{m2oLabel(row.academic_year_id)}</Cell>
-          <Cell>{m2oLabel(row.target_academic_year_id)}</Cell>
-          <Cell>{m2oLabel(row.grade_id)}</Cell>
-          <Cell numeric>{row.line_count}</Cell>
-          <Cell numeric>{row.promoted_count}</Cell>
-          <Cell numeric>{row.retained_count}</Cell>
-          <Cell>
-            <StatusBadge state={row.state} />
-          </Cell>
-        </>
-      )}
+      emptyHint="A batch advances one grade from one academic year to the next."
+      columns={[
+        {
+          key: 'name',
+          label: 'Batch',
+          render: (row) => <RowLink href={`/promotion/${row.id}`}>{row.name}</RowLink>,
+        },
+        { key: 'from', label: 'From year', render: (row) => m2oLabel(row.academic_year_id) },
+        {
+          key: 'to',
+          label: 'To year',
+          hideBelow: 'sm',
+          render: (row) => m2oLabel(row.target_academic_year_id),
+        },
+        { key: 'grade', label: 'Grade', hideBelow: 'md', render: (row) => m2oLabel(row.grade_id) },
+        { key: 'students', label: 'Students', numeric: true, render: (row) => row.line_count },
+        {
+          key: 'promoted',
+          label: 'Promoted',
+          numeric: true,
+          hideBelow: 'sm',
+          render: (row) => row.promoted_count,
+        },
+        {
+          key: 'retained',
+          label: 'Retained',
+          numeric: true,
+          hideBelow: 'lg',
+          render: (row) => row.retained_count,
+        },
+        { key: 'state', label: 'Status', render: (row) => <StatusBadge state={row.state} /> },
+      ]}
     />
   )
 }

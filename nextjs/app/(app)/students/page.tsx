@@ -1,130 +1,100 @@
-import Link from 'next/link'
-import {
-  Card,
-  Cell,
-  DataTable,
-  EmptyState,
-  ErrorState,
-  PageHeader,
-  Row,
-  StatusBadge,
-} from '@/components/ui'
-import { listStudents } from '@/lib/odoo/models/school'
-import { toOdooError } from '@/lib/odoo/errors'
-import { m2oLabel } from '@/lib/odoo/types'
-import { SearchField } from '@/components/search-field'
+import { LinkButton, StatusBadge } from '@/components/ui'
+import { ResourceList } from '@/components/resource-list'
+import { RowLink } from '@/components/ui/table'
 import { hasAccess } from '@/lib/odoo/client'
+import { classOptions } from '@/lib/odoo/filter-options'
+import { listStudents } from '@/lib/odoo/models/school'
+import { selectionOptions } from '@/lib/odoo/selections'
+import { toOdooOrder } from '@/lib/list-query'
+import { formatText } from '@/lib/format'
+import { m2oLabel } from '@/lib/odoo/types'
 
 export const metadata = { title: 'Students · Async School' }
 
-const PAGE_SIZE = 25
-
-
 /**
- * Filtering and paging are pushed into Odoo's domain/limit/offset rather than
- * fetched wholesale and narrowed in React — the record rules also scope this
- * per user, so "everything" is never the right query.
+ * Searching, filtering, sorting and paging all reach Odoo as a domain, an
+ * order and a limit. Nothing is narrowed in the browser: record rules already
+ * scope the rows per user, and one page is never the whole result set.
  */
 export default async function StudentsPage({ searchParams }: PageProps<'/students'>) {
-  const params = await searchParams
-  const search = typeof params.q === 'string' ? params.q : undefined
-  const page = Number(typeof params.page === 'string' ? params.page : '1') || 1
-  const offset = (page - 1) * PAGE_SIZE
-
-  const canCreate = await hasAccess('school.student', 'create')
-
-  let result
-  try {
-    result = await listStudents({ search, limit: PAGE_SIZE, offset })
-  } catch (cause) {
-    const error = toOdooError(cause)
-    return (
-      <>
-        <PageHeader title="Students" />
-        <ErrorState {...error.toClient()} />
-      </>
-    )
-  }
-
-  const lastPage = Math.max(1, Math.ceil(result.total / PAGE_SIZE))
+  const [canCreate, registrationStatuses, lifecycleStatuses, classes] = await Promise.all([
+    hasAccess('school.student', 'create'),
+    selectionOptions('school.student', 'registration_status'),
+    selectionOptions('school.student', 'lifecycle_status'),
+    classOptions(),
+  ])
 
   return (
-    <>
-      <PageHeader
-        title="Students"
-        subtitle={`${result.total.toLocaleString()} record${result.total === 1 ? '' : 's'} visible to you`}
-        action={
-          canCreate ? (
-            <Link
-              href="/students/new"
-              className="rounded-[9999px] bg-ink px-5 py-2.5 text-[13px] font-medium text-white hover:bg-graphite"
-            >
-              Register student
-            </Link>
-          ) : undefined
-        }
-      />
-
-      <Card padded={false}>
-        <div className="border-b border-silver p-4">
-          <SearchField placeholder="Search by name or student ID" />
-        </div>
-
-        {result.rows.length === 0 ? (
-          <EmptyState
-            title={search ? 'No students match that search' : 'No students visible'}
-            hint={
-              search
-                ? 'Try a different name or student ID.'
-                : 'Odoo scopes this list to the records your role may see.'
-            }
-          />
-        ) : (
-          <DataTable columns={['Name', 'Student ID', 'Class', 'Academic year', 'Registration']}>
-            {result.rows.map((row) => (
-              <Row key={row.id}>
-                <Cell strong>
-                  <Link href={`/students/${row.id}`} className="hover:text-action-blue">
-                    {row.name}
-                  </Link>
-                </Cell>
-                <Cell>{row.regno || '—'}</Cell>
-                <Cell>{m2oLabel(row.class_id)}</Cell>
-                <Cell>{m2oLabel(row.academic_year_id)}</Cell>
-                <Cell>
-                  <StatusBadge state={row.registration_status} model="school.student" />
-                </Cell>
-              </Row>
-            ))}
-          </DataTable>
-        )}
-
-        {lastPage > 1 ? (
-          <div className="flex items-center justify-between border-t border-silver px-4 py-3 text-[13px]">
-            <span className="text-slate">
-              Page {page} of {lastPage}
-            </span>
-            <span className="flex gap-2">
-              {page > 1 ? (
-                <Link
-                  href={{ pathname: '/students', query: { ...(search ? { q: search } : {}), page: page - 1 } }}
-                  className="rounded-[9999px] border border-silver px-3 py-1.5 hover:bg-paper"
-                >
-                  Previous
-                </Link>
-              ) : null}
-              {page < lastPage ? (
-                <Link
-                  href={{ pathname: '/students', query: { ...(search ? { q: search } : {}), page: page + 1 } }}
-                  className="rounded-[9999px] border border-silver px-3 py-1.5 hover:bg-paper"
-                >
-                  Next
-                </Link>
-              ) : null}
-            </span>
-          </div>
-        ) : null}
-      </Card>
-    </>
+    <ResourceList
+      title="Students"
+      icon="students"
+      basePath="/students"
+      searchParams={searchParams}
+      search={{ placeholder: 'Name, student ID or admission number' }}
+      filters={[
+        { key: 'status', label: 'Registration', options: registrationStatuses },
+        { key: 'lifecycle', label: 'Lifecycle', options: lifecycleStatuses },
+        { key: 'class', label: 'Class', options: classes },
+      ]}
+      defaultSort={{ field: 'name', direction: 'asc' }}
+      load={(query) =>
+        listStudents({
+          search: query.search,
+          filters: query.filters,
+          order: toOdooOrder(query),
+          limit: query.limit,
+          offset: query.offset,
+        })
+      }
+      action={
+        canCreate ? (
+          <LinkButton href="/students/new" variant="primary" icon="plus">
+            Register student
+          </LinkButton>
+        ) : undefined
+      }
+      rowHref={(row) => `/students/${row.id}`}
+      emptyTitle="No students visible"
+      emptyHint="Odoo scopes this list to the records your role may see."
+      emptyAction={
+        canCreate ? (
+          <LinkButton href="/students/new" variant="primary" icon="plus" size="sm">
+            Register the first student
+          </LinkButton>
+        ) : undefined
+      }
+      columns={[
+        {
+          key: 'name',
+          label: 'Name',
+          sortField: 'name',
+          render: (row) => <RowLink href={`/students/${row.id}`}>{row.name}</RowLink>,
+        },
+        {
+          key: 'regno',
+          label: 'Student ID',
+          sortField: 'regno',
+          render: (row) => <span className="tabular">{formatText(row.regno)}</span>,
+        },
+        { key: 'class', label: 'Class', render: (row) => m2oLabel(row.class_id) },
+        {
+          key: 'year',
+          label: 'Academic year',
+          hideBelow: 'md',
+          render: (row) => m2oLabel(row.academic_year_id),
+        },
+        {
+          key: 'lifecycle',
+          label: 'Lifecycle',
+          hideBelow: 'lg',
+          render: (row) => <StatusBadge state={row.lifecycle_status} size="sm" />,
+        },
+        {
+          key: 'status',
+          label: 'Registration',
+          render: (row) => <StatusBadge state={row.registration_status} model="school.student" />,
+        },
+      ]}
+    />
   )
 }

@@ -1,6 +1,7 @@
 import 'server-only'
 import { readOne, searchCount, searchRead } from '@/lib/odoo/client'
 import { orNullOnRefusal } from '@/lib/odoo/errors'
+import { listDomain, type ListOptions } from '@/lib/odoo/list'
 import type { Domain, Ids, Many2one, Page, Selection } from '@/lib/odoo/types'
 
 /**
@@ -40,19 +41,23 @@ const STUDENT_LIST_FIELDS = [
   'gender',
 ] as const
 
-export function listStudents(options: {
-  search?: string
-  limit?: number
-  offset?: number
-}): Promise<Page<StudentRow>> {
-  const domain: Domain = options.search
-    ? ['|', ['name', 'ilike', options.search], ['regno', 'ilike', options.search]]
-    : []
+/** The filters this screen offers, and the Odoo field each one narrows. */
+export const STUDENT_FILTERS = {
+  status: { field: 'registration_status' },
+  lifecycle: { field: 'lifecycle_status' },
+  class: { field: 'class_id', kind: 'many2one' },
+  year: { field: 'academic_year_id', kind: 'many2one' },
+} as const
+
+export function listStudents(options: ListOptions = {}): Promise<Page<StudentRow>> {
   return searchRead<StudentRow>('school.student', STUDENT_LIST_FIELDS, {
-    domain,
+    domain: listDomain(options, {
+      searchFields: ['name', 'regno', 'admission_number'],
+      filters: STUDENT_FILTERS,
+    }),
     limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'name asc',
+    order: options.order ?? 'name asc',
   })
 }
 
@@ -104,17 +109,21 @@ const STAFF_LIST_FIELDS = [
   'primary_responsibility',
 ] as const
 
-export function listStaff(options: {
-  search?: string
-  limit?: number
-  offset?: number
-}): Promise<Page<StaffRow>> {
-  const domain: Domain = options.search ? [['name', 'ilike', options.search]] : []
+export const STAFF_FILTERS = {
+  status: { field: 'state' },
+  department: { field: 'department' },
+  employment: { field: 'employment_status' },
+} as const
+
+export function listStaff(options: ListOptions = {}): Promise<Page<StaffRow>> {
   return searchRead<StaffRow>('school.staff', STAFF_LIST_FIELDS, {
-    domain,
+    domain: listDomain(options, {
+      searchFields: ['name', 'staff_id'],
+      filters: STAFF_FILTERS,
+    }),
     limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'name asc',
+    order: options.order ?? 'name asc',
   })
 }
 
@@ -143,13 +152,20 @@ const TEACHER_FIELDS = [
   'current_weekly_periods',
 ] as const
 
-export function listTeachers(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<TeacherRow>
-> {
+export const TEACHER_FILTERS = {
+  status: { field: 'teaching_status' },
+  department: { field: 'department' },
+} as const
+
+export function listTeachers(options: ListOptions = {}): Promise<Page<TeacherRow>> {
   return searchRead<TeacherRow>('school.teacher', TEACHER_FIELDS, {
+    domain: listDomain(options, {
+      searchFields: ['name', 'teacher_id'],
+      filters: TEACHER_FILTERS,
+    }),
     limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'name asc',
+    order: options.order ?? 'name asc',
   })
 }
 
@@ -180,13 +196,19 @@ const ASSIGNMENT_FIELDS = [
   'state',
 ] as const
 
-export function listAssignments(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<AssignmentRow>
-> {
+export const ASSIGNMENT_FILTERS = {
+  status: { field: 'state' },
+  responsibility: { field: 'responsibility' },
+  class: { field: 'class_id', kind: 'many2one' },
+  subject: { field: 'subject_id', kind: 'many2one' },
+} as const
+
+export function listAssignments(options: ListOptions = {}): Promise<Page<AssignmentRow>> {
   return searchRead<AssignmentRow>('school.teacher.assignment', ASSIGNMENT_FIELDS, {
+    domain: listDomain(options, { searchFields: ['name'], filters: ASSIGNMENT_FILTERS }),
     limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'academic_year_id desc, term_id asc',
+    order: options.order ?? 'academic_year_id desc, term_id asc',
   })
 }
 
@@ -220,13 +242,24 @@ const MARK_FIELDS = [
   'mark_status',
 ] as const
 
-export function listMarks(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<MarkRow>
-> {
+export const MARK_FILTERS = {
+  status: { field: 'mark_status' },
+  type: { field: 'exam_type' },
+  class: { field: 'class_id', kind: 'many2one' },
+  subject: { field: 'subject_id', kind: 'many2one' },
+  term: { field: 'term_id', kind: 'many2one' },
+} as const
+
+export function listMarks(options: ListOptions = {}): Promise<Page<MarkRow>> {
   return searchRead<MarkRow>('school.mark', MARK_FIELDS, {
-    limit: options.limit ?? 50,
+    // Searching a related field is Odoo's own dotted path, resolved server-side.
+    domain: listDomain(options, {
+      searchFields: ['student_id.name'],
+      filters: MARK_FILTERS,
+    }),
+    limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'student_id asc',
+    order: options.order ?? 'student_id asc',
   })
 }
 
@@ -243,13 +276,22 @@ export interface ClassRow {
   student_ids: Ids
 }
 
-export function listClasses(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<ClassRow>
-> {
+export const CLASS_FILTERS = {
+  level: { field: 'education_level' },
+  year: { field: 'academic_year_id', kind: 'many2one' },
+  grade: { field: 'grade_id', kind: 'many2one' },
+} as const
+
+export function listClasses(options: ListOptions = {}): Promise<Page<ClassRow>> {
   return searchRead<ClassRow>(
     'school.class',
     ['name', 'grade_id', 'section_id', 'academic_year_id', 'education_level', 'capacity', 'student_ids'],
-    { limit: options.limit ?? 50, offset: options.offset ?? 0, order: 'name asc' },
+    {
+      domain: listDomain(options, { searchFields: ['name'], filters: CLASS_FILTERS }),
+      limit: options.limit ?? 25,
+      offset: options.offset ?? 0,
+      order: options.order ?? 'name asc',
+    },
   )
 }
 
@@ -261,13 +303,16 @@ export interface SubjectRow {
   active: boolean
 }
 
-export function listSubjects(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<SubjectRow>
-> {
+export const SUBJECT_FILTERS = {
+  type: { field: 'subject_type' },
+} as const
+
+export function listSubjects(options: ListOptions = {}): Promise<Page<SubjectRow>> {
   return searchRead<SubjectRow>('school.subject', ['name', 'code', 'subject_type', 'active'], {
-    limit: options.limit ?? 50,
+    domain: listDomain(options, { searchFields: ['name', 'code'], filters: SUBJECT_FILTERS }),
+    limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'name asc',
+    order: options.order ?? 'name asc',
   })
 }
 
@@ -281,12 +326,30 @@ export interface AcademicYearRow {
   class_count: number
 }
 
-export function listAcademicYears(): Promise<Page<AcademicYearRow>> {
-  return searchRead<AcademicYearRow>(
-    'school.academic.year',
-    ['name', 'date_start', 'date_end', 'state', 'is_current', 'class_count'],
-    { limit: 50, order: 'name desc' },
-  )
+export const ACADEMIC_YEAR_FILTERS = {
+  status: { field: 'state' },
+} as const
+
+const ACADEMIC_YEAR_FIELDS = [
+  'name',
+  'date_start',
+  'date_end',
+  'state',
+  'is_current',
+  'class_count',
+] as const
+
+export function listAcademicYears(options: ListOptions = {}): Promise<Page<AcademicYearRow>> {
+  return searchRead<AcademicYearRow>('school.academic.year', ACADEMIC_YEAR_FIELDS, {
+    domain: listDomain(options, { searchFields: ['name'], filters: ACADEMIC_YEAR_FILTERS }),
+    limit: options.limit ?? 25,
+    offset: options.offset ?? 0,
+    order: options.order ?? 'name desc',
+  })
+}
+
+export function getAcademicYear(id: number): Promise<AcademicYearRow | null> {
+  return readOne<AcademicYearRow>('school.academic.year', id, ACADEMIC_YEAR_FIELDS)
 }
 
 /* ------------------------------------------------------------ Aggregate --- */

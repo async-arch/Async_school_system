@@ -111,13 +111,15 @@ export function SortHeader({
       )}
     >
       {label}
+      {/* One glyph, flipped: down for descending, up for ascending. A right
+          chevron reads as "next", which is not what a sorted column means. */}
       <Icon
-        name={active && activeDirection === 'desc' ? 'chevronDown' : 'chevronRight'}
+        name="chevronDown"
         size={11}
         className={cx(
           'shrink-0 transition-opacity',
           active ? 'opacity-100' : 'opacity-0 group-hover:opacity-40',
-          !active && 'rotate-90',
+          (active ? activeDirection : 'desc') === 'asc' && 'rotate-180',
         )}
       />
     </Link>

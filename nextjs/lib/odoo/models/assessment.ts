@@ -1,6 +1,7 @@
 import 'server-only'
 import { callKw, readOne, searchRead, write } from '@/lib/odoo/client'
 import { orNullOnRefusal } from '@/lib/odoo/errors'
+import { listDomain, type ListOptions } from '@/lib/odoo/list'
 import type { Many2one, Page, Selection } from '@/lib/odoo/types'
 
 /**
@@ -46,14 +47,49 @@ const ASSESSMENT_FIELDS = [
   'mark_count',
 ] as const
 
-export function listAssessments(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<AssessmentRow>
-> {
+export const ASSESSMENT_FILTERS = {
+  status: { field: 'state' },
+  type: { field: 'assessment_type' },
+  class: { field: 'class_id', kind: 'many2one' },
+  subject: { field: 'subject_id', kind: 'many2one' },
+  term: { field: 'term_id', kind: 'many2one' },
+} as const
+
+export function listAssessments(options: ListOptions = {}): Promise<Page<AssessmentRow>> {
   return searchRead<AssessmentRow>('school.assessment', ASSESSMENT_FIELDS, {
-    limit: options.limit ?? 50,
+    domain: listDomain(options, { searchFields: ['name'], filters: ASSESSMENT_FILTERS }),
+    limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'date desc',
+    order: options.order ?? 'date desc',
   })
+}
+
+/**
+ * Assessments still needing something from the signed-in teacher.
+ *
+ * `open` means the mark list is generated and waiting for entry; `returned`
+ * means an exam officer sent it back. Record rules already narrow this to the
+ * teacher's own assignments, so no user filter is added here.
+ */
+export function listAssessmentsAwaitingEntry(limit = 6): Promise<Page<AssessmentRow> | null> {
+  return orNullOnRefusal(
+    searchRead<AssessmentRow>('school.assessment', ASSESSMENT_FIELDS, {
+      domain: [['state', 'in', ['open', 'returned']]],
+      limit,
+      order: 'date desc',
+    }),
+  )
+}
+
+/** Mark lists submitted and waiting on an exam officer. */
+export function listAssessmentsAwaitingApproval(limit = 6): Promise<Page<AssessmentRow> | null> {
+  return orNullOnRefusal(
+    searchRead<AssessmentRow>('school.assessment', ASSESSMENT_FIELDS, {
+      domain: [['state', '=', 'submitted']],
+      limit,
+      order: 'date desc',
+    }),
+  )
 }
 
 export function getAssessment(id: number): Promise<AssessmentRow | null> {
@@ -153,13 +189,26 @@ export interface ReportCardRow {
   state: Selection
 }
 
-export function listReportCards(options: { limit?: number; offset?: number } = {}): Promise<
-  Page<ReportCardRow>
-> {
+export const REPORT_CARD_FILTERS = {
+  status: { field: 'state' },
+  result: { field: 'result_status' },
+  class: { field: 'class_id', kind: 'many2one' },
+  term: { field: 'term_id', kind: 'many2one' },
+} as const
+
+export function listReportCards(options: ListOptions = {}): Promise<Page<ReportCardRow>> {
   return searchRead<ReportCardRow>(
     'school.report.card',
     ['name', 'student_id', 'class_id', 'term_id', 'academic_year_id', 'state'],
-    { limit: options.limit ?? 50, offset: options.offset ?? 0, order: 'id desc' },
+    {
+      domain: listDomain(options, {
+        searchFields: ['name', 'student_id.name'],
+        filters: REPORT_CARD_FILTERS,
+      }),
+      limit: options.limit ?? 25,
+      offset: options.offset ?? 0,
+      order: options.order ?? 'id desc',
+    },
   )
 }
 
@@ -264,10 +313,17 @@ const PROMOTION_FIELDS = [
   'conditional_count',
 ] as const
 
-export function listPromotionBatches(): Promise<Page<PromotionBatchRow>> {
+export const PROMOTION_FILTERS = {
+  status: { field: 'state' },
+  grade: { field: 'grade_id', kind: 'many2one' },
+} as const
+
+export function listPromotionBatches(options: ListOptions = {}): Promise<Page<PromotionBatchRow>> {
   return searchRead<PromotionBatchRow>('school.promotion.batch', PROMOTION_FIELDS, {
-    limit: 50,
-    order: 'id desc',
+    domain: listDomain(options, { searchFields: ['name'], filters: PROMOTION_FILTERS }),
+    limit: options.limit ?? 25,
+    offset: options.offset ?? 0,
+    order: options.order ?? 'id desc',
   })
 }
 

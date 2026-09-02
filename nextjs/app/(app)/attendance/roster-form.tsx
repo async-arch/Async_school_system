@@ -14,7 +14,8 @@ export function RosterForm({
   classes,
   defaultDate,
 }: {
-  classes: Array<{ id: number; name: string }>
+  /** The same `{value,label}` options the class filter uses. */
+  classes: Array<{ value: string; label: string }>
   defaultDate: string
 }) {
   const [state, formAction, pending] = useActionState<AttendanceState, FormData>(
@@ -34,9 +35,9 @@ export function RosterForm({
           className="rounded-[8px] border border-silver bg-white px-3 py-2 text-[13px] focus:border-action-blue focus:outline-none"
         >
           <option value="">Choose…</option>
-          {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
+          {classes.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>

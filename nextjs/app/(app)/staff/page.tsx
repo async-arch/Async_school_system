@@ -1,54 +1,88 @@
-import Link from 'next/link'
-import { formatSelection } from '@/lib/format'
-import {
-  StatusBadge,
-} from '@/components/ui'
-import { Cell, ResourceList } from '@/components/resource-list'
+import { LinkButton, StatusBadge } from '@/components/ui'
+import { ResourceList } from '@/components/resource-list'
+import { RowLink } from '@/components/ui/table'
+import { formatSelection, formatText } from '@/lib/format'
+import { toOdooOrder } from '@/lib/list-query'
 import { hasAccess } from '@/lib/odoo/client'
 import { listStaff } from '@/lib/odoo/models/school'
+import { selectionOptions } from '@/lib/odoo/selections'
 import { m2oLabel } from '@/lib/odoo/types'
 
 export const metadata = { title: 'Staff · Async School' }
 
-
-export default async function StaffPage() {
+export default async function StaffPage({ searchParams }: PageProps<'/staff'>) {
   // Odoo's own ACL decides whether the button appears. It is re-checked on the
   // create page and again by Odoo on submit — this only avoids a dead end.
-  const canCreate = await hasAccess('school.staff', 'create')
+  const [canCreate, states, departments] = await Promise.all([
+    hasAccess('school.staff', 'create'),
+    selectionOptions('school.staff', 'state'),
+    selectionOptions('school.staff', 'department'),
+  ])
 
   return (
     <ResourceList
       title="Staff"
-      load={() => listStaff({ limit: 50 })}
-      columns={['Name', 'Staff ID', 'Department', 'Job title', 'Responsibility', 'Status']}
-      emptyTitle="No staff visible"
-      emptyHint="Odoo scopes this list to the records your role may see."
+      icon="staff"
+      basePath="/staff"
+      searchParams={searchParams}
+      search={{ placeholder: 'Name or staff ID' }}
+      filters={[
+        { key: 'status', label: 'Status', options: states },
+        { key: 'department', label: 'Department', options: departments },
+      ]}
+      defaultSort={{ field: 'name', direction: 'asc' }}
+      load={(query) =>
+        listStaff({
+          search: query.search,
+          filters: query.filters,
+          order: toOdooOrder(query),
+          limit: query.limit,
+          offset: query.offset,
+        })
+      }
       action={
         canCreate ? (
-          <Link
-            href="/staff/new"
-            className="rounded-[9999px] bg-ink px-5 py-2.5 text-[13px] font-medium text-white hover:bg-graphite"
-          >
+          <LinkButton href="/staff/new" variant="primary" icon="plus">
             Register staff
-          </Link>
+          </LinkButton>
         ) : undefined
       }
-      renderRow={(row) => (
-        <>
-          <Cell strong>
-            <Link href={`/staff/${row.id}`} className="hover:text-action-blue">
-              {row.name}
-            </Link>
-          </Cell>
-          <Cell>{row.staff_id || '—'}</Cell>
-          <Cell>{formatSelection(row.department)}</Cell>
-          <Cell>{m2oLabel(row.job_title_id)}</Cell>
-          <Cell>{formatSelection(row.primary_responsibility)}</Cell>
-          <Cell>
-            <StatusBadge state={row.state} />
-          </Cell>
-        </>
-      )}
+      rowHref={(row) => `/staff/${row.id}`}
+      emptyTitle="No staff visible"
+      emptyHint="Odoo scopes this list to the records your role may see — Front Office sees only its own."
+      columns={[
+        {
+          key: 'name',
+          label: 'Name',
+          sortField: 'name',
+          render: (row) => <RowLink href={`/staff/${row.id}`}>{row.name}</RowLink>,
+        },
+        {
+          key: 'staffId',
+          label: 'Staff ID',
+          sortField: 'staff_id',
+          render: (row) => <span className="tabular">{formatText(row.staff_id)}</span>,
+        },
+        {
+          key: 'department',
+          label: 'Department',
+          hideBelow: 'sm',
+          render: (row) => formatSelection(row.department),
+        },
+        {
+          key: 'jobTitle',
+          label: 'Job title',
+          hideBelow: 'md',
+          render: (row) => m2oLabel(row.job_title_id),
+        },
+        {
+          key: 'responsibility',
+          label: 'Responsibility',
+          hideBelow: 'lg',
+          render: (row) => formatSelection(row.primary_responsibility),
+        },
+        { key: 'state', label: 'Status', render: (row) => <StatusBadge state={row.state} /> },
+      ]}
     />
   )
 }

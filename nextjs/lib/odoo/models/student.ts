@@ -1,6 +1,7 @@
 import 'server-only'
 import { create, readOne, searchRead } from '@/lib/odoo/client'
 import { orNullOnRefusal } from '@/lib/odoo/errors'
+import { listDomain, type ListOptions } from '@/lib/odoo/list'
 import type { Many2one, Page, Selection } from '@/lib/odoo/types'
 
 /**
@@ -136,16 +137,25 @@ const ENROLLMENT_FIELDS = [
   'state',
 ] as const
 
-export function listEnrollments(options: {
-  studentId?: number
-  limit?: number
-  offset?: number
-} = {}): Promise<Page<EnrollmentRow>> {
+export const ENROLLMENT_FILTERS = {
+  status: { field: 'state' },
+  admission: { field: 'admission_type' },
+  class: { field: 'class_id', kind: 'many2one' },
+  year: { field: 'academic_year_id', kind: 'many2one' },
+} as const
+
+export function listEnrollments(
+  options: ListOptions & { studentId?: number } = {},
+): Promise<Page<EnrollmentRow>> {
   return searchRead<EnrollmentRow>('school.enrollment', ENROLLMENT_FIELDS, {
-    domain: options.studentId ? [['student_id', '=', options.studentId]] : [],
-    limit: options.limit ?? 50,
+    domain: listDomain(options, {
+      base: options.studentId ? [['student_id', '=', options.studentId]] : [],
+      searchFields: ['name', 'student_id.name'],
+      filters: ENROLLMENT_FILTERS,
+    }),
+    limit: options.limit ?? 25,
     offset: options.offset ?? 0,
-    order: 'enrollment_date desc',
+    order: options.order ?? 'enrollment_date desc',
   })
 }
 
