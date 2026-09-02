@@ -14,13 +14,15 @@ import {
   StateBreakdown,
   TileGrid,
 } from '@/components/dashboard/panels'
-import { formatDate, formatTimeRange, weekdayName } from '@/lib/format'
+import { formatDate, formatSelection, formatTimeRange, weekdayName } from '@/lib/format'
 import {
+  academicContext,
   attendanceTodayByStatus,
   classesForTeacher,
   safeCount,
   todaysLessons,
 } from '@/lib/odoo/models/dashboard'
+import { listAssignmentsForTeacher } from '@/lib/odoo/models/teacher'
 import { listAssessmentsAwaitingEntry } from '@/lib/odoo/models/assessment'
 import { listLiveAnnouncements } from '@/lib/odoo/models/operations'
 import { m2oId, m2oLabel, type CurrentUser } from '@/lib/odoo/types'
@@ -37,17 +39,47 @@ export async function TeacherDashboard({ user }: { user: CurrentUser }) {
   const teacherId = m2oId(user.school_teacher_id)
   const classIds = user.school_taught_class_ids ?? []
 
-  const [lessons, awaitingEntry, classes, attendanceToday, announcements, myStudents] =
-    await Promise.all([
-      teacherId ? todaysLessons(teacherId) : Promise.resolve(null),
-      listAssessmentsAwaitingEntry(5),
-      classesForTeacher(classIds),
-      attendanceTodayByStatus(),
-      listLiveAnnouncements(3),
-      classIds.length
-        ? safeCount('school.student', [['class_id', 'in', classIds]])
-        : Promise.resolve(null),
-    ])
+  const [
+    lessons,
+    awaitingEntry,
+    classes,
+    attendanceToday,
+    announcements,
+    myStudents,
+    assignments,
+    academic,
+  ] = await Promise.all([
+    teacherId ? todaysLessons(teacherId) : Promise.resolve(null),
+    listAssessmentsAwaitingEntry(5),
+    classesForTeacher(classIds),
+    attendanceTodayByStatus(),
+    listLiveAnnouncements(3),
+    classIds.length
+      ? safeCount('school.student', [['class_id', 'in', classIds]])
+      : Promise.resolve(null),
+    // Record rules already narrow assignments to this teacher's own rows; the
+    // id says whose page it is, not who may see it.
+    teacherId ? listAssignmentsForTeacher(teacherId, 50) : Promise.resolve(null),
+    academicContext(),
+  ])
+
+  /*
+    "My subjects" and "my classes" are derived from the teacher's own active
+    assignments rather than counted separately, so the dashboard cannot
+    disagree with the assignment records it links to. An assignment that has
+    ended stops contributing, which is the point of the state.
+  */
+  const activeAssignments = assignments?.rows.filter((row) => row.state === 'active') ?? []
+  const mySubjects = [...new Map(
+    activeAssignments
+      .filter((row) => row.subject_id)
+      .map((row) => [(row.subject_id as [number, string])[0], (row.subject_id as [number, string])[1]]),
+  )]
+  const myClasses = [...new Map(
+    activeAssignments
+      .filter((row) => row.class_id)
+      .map((row) => [(row.class_id as [number, string])[0], (row.class_id as [number, string])[1]]),
+  )]
 
   const recordedToday = attendanceToday?.reduce((sum, group) => sum + group.count, 0) ?? null
   const notRecorded =
@@ -58,7 +90,15 @@ export async function TeacherDashboard({ user }: { user: CurrentUser }) {
       <DashboardGreeting
         name={user.name}
         role="Teacher"
-        department={user.school_department || undefined}
+        department={
+          [
+            user.school_department || null,
+            academic.year?.name ?? null,
+            academic.term?.name ?? null,
+          ]
+            .filter(Boolean)
+            .join(' · ') || undefined
+        }
       />
 
       <QuickLinks
@@ -79,9 +119,17 @@ export async function TeacherDashboard({ user }: { user: CurrentUser }) {
         />
         <CountTile
           label="My classes"
-          value={classes ? classes.rows.length : classIds.length || null}
+          value={myClasses.length || (classes ? classes.rows.length : null)}
           icon="classes"
           href="/classes"
+          hint="From your active assignments"
+        />
+        <CountTile
+          label="My subjects"
+          value={mySubjects.length || null}
+          icon="subjects"
+          href="/assignments"
+          hint="From your active assignments"
         />
         <CountTile label="My students" value={myStudents} icon="students" href="/students" />
         <CountTile
@@ -232,6 +280,101 @@ export async function TeacherDashboard({ user }: { user: CurrentUser }) {
               groups={attendanceToday}
               hrefFor={(group) => `/attendance?status=${group.value}`}
             />
+          ) : null}
+        </Panel>
+
+        <Panel
+          title="My assignments"
+          icon="assignments"
+          href="/assignments"
+          hint="What you are timetabled to teach, and for which term."
+          restricted={teacherId !== null && assignments === null}
+          empty={
+            !teacherId
+              ? {
+                  title: 'No teaching profile linked',
+                  hint: 'Assignments hang off a teaching profile, which hangs off your staff record.',
+                }
+              : assignments && assignments.rows.length === 0
+                ? {
+                    title: 'No assignments yet',
+                    hint: 'A registrar assigns you to a subject and class for a given term.',
+                  }
+                : undefined
+          }
+        >
+          {assignments && assignments.rows.length > 0 ? (
+            <DataTable
+              caption="Your teaching assignments"
+              columns={[
+                { key: 'subject', label: 'Subject' },
+                { key: 'class', label: 'Class' },
+                { key: 'term', label: 'Term', hideBelow: 'sm' },
+                { key: 'role', label: 'Role', hideBelow: 'lg' },
+                { key: 'periods', label: 'Periods', numeric: true },
+                { key: 'state', label: 'Status' },
+              ]}
+            >
+              {assignments.rows.slice(0, 8).map((row) => (
+                <Row key={row.id}>
+                  <Cell strong>
+                    <RowLink href={`/assignments/${row.id}`}>{m2oLabel(row.subject_id)}</RowLink>
+                  </Cell>
+                  <Cell>{m2oLabel(row.class_id)}</Cell>
+                  <Cell hideBelow="sm">{m2oLabel(row.term_id)}</Cell>
+                  <Cell hideBelow="lg">{formatSelection(row.responsibility)}</Cell>
+                  <Cell numeric>{row.weekly_periods}</Cell>
+                  <Cell>
+                    <StatusBadge state={row.state} size="sm" />
+                  </Cell>
+                </Row>
+              ))}
+            </DataTable>
+          ) : null}
+        </Panel>
+
+        <Panel
+          title="My classes and subjects"
+          icon="classes"
+          hint="Only what your own active assignments cover."
+          empty={
+            myClasses.length === 0 && mySubjects.length === 0
+              ? {
+                  title: 'Nothing assigned yet',
+                  hint: 'Your classes and subjects appear here once you hold an active assignment.',
+                }
+              : undefined
+          }
+        >
+          {myClasses.length || mySubjects.length ? (
+            <dl className="space-y-4 p-5 pt-1 text-[13px]">
+              <div>
+                <dt className="text-[11px] tracking-wide text-stone uppercase">Classes</dt>
+                <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                  {myClasses.map(([classId, name]) => (
+                    <span
+                      key={classId}
+                      className="rounded-[9999px] bg-paper px-2.5 py-1 text-[12px] text-graphite"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] tracking-wide text-stone uppercase">Subjects</dt>
+                <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                  {mySubjects.map(([subjectId, name]) => (
+                    <span
+                      key={subjectId}
+                      className="rounded-[9999px] bg-paper px-2.5 py-1 text-[12px] text-graphite"
+                    >
+                      {name}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            </dl>
           ) : null}
         </Panel>
 
