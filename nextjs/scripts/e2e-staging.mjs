@@ -121,7 +121,9 @@ try {
 
   /* ------------------------------------------------------------ logout --- */
   console.log('\n[4] Logout')
-  await teacherPage.click('button:has-text("Sign out")')
+  // Sign out moved from the sidebar footer into the header account menu.
+  await teacherPage.click('header button[aria-haspopup="menu"]')
+  await teacherPage.click('[role="menu"] button:has-text("Sign out")')
   await teacherPage.waitForURL('**/login', { timeout: 60_000 }).catch(() => {})
   check('logout returns to /login', teacherPage.url().includes('/login'))
   const afterLogout = await teacherContext.cookies()
