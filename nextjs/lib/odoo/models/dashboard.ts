@@ -74,6 +74,49 @@ export function safeCount(model: string, domain: unknown[] = []): Promise<number
   return orNullOnRefusal(searchCount(model, domain))
 }
 
+/* ------------------------------------------------- academic context --- */
+
+export interface AcademicContext {
+  year: { id: number; name: string } | null
+  term: { id: number; name: string; date_start: string; date_end: string } | null
+}
+
+/**
+ * Which academic year and term the school is in right now.
+ *
+ * The year is Odoo's own `is_current` flag, which a constraint keeps unique.
+ * Terms carry no equivalent flag, so the current one is the term whose date
+ * range contains today — a query, not a rule invented here. Both may be null,
+ * and the dashboard says so rather than guessing.
+ */
+export async function academicContext(): Promise<AcademicContext> {
+  const today = todayIso()
+  const [years, terms] = await Promise.all([
+    orNullOnRefusal(
+      searchRead<{ id: number; name: string }>('school.academic.year', ['name'], {
+        domain: [['is_current', '=', true]],
+        limit: 1,
+      }),
+    ),
+    orNullOnRefusal(
+      searchRead<{ id: number; name: string; date_start: string; date_end: string }>(
+        'school.term',
+        ['name', 'date_start', 'date_end'],
+        {
+          domain: [
+            ['date_start', '<=', today],
+            ['date_end', '>=', today],
+            ['active', '=', true],
+          ],
+          limit: 1,
+          order: 'sequence',
+        },
+      ),
+    ),
+  ])
+  return { year: years?.rows[0] ?? null, term: terms?.rows[0] ?? null }
+}
+
 /* -------------------------------------------------------------- teacher --- */
 
 /**
