@@ -70,47 +70,111 @@ export function getTeacher(id: number): Promise<TeacherDetail | null> {
 }
 
 /**
- * The staff records a teacher profile may be created on.
+ * The staff records a teacher profile may be created on, and the ones that
+ * fall short.
  *
- * This mirrors `_check_staff_active` rather than reimplementing it: the domain
- * asks Odoo for staff that would pass, so the picker cannot offer somebody the
- * constraint will reject. Odoo still runs the check on create — this only
- * spares the user a refusal it could have predicted.
+ * `_check_staff_active` refuses a link unless the staff member is active,
+ * employed, and either in the academic department or holding a teaching
+ * responsibility. Returning only the passes was not enough: a registrar who
+ * had just created somebody went looking for them, found a populated list with
+ * their person quietly missing, and had no way to tell whether the record had
+ * saved. The near misses come back too, each with the reason Odoo would give,
+ * so the form can say what to do about it.
  *
- * Staff who already hold a profile are excluded, because one profile per staff
- * member is the working rule and a second would be confusing rather than
- * useful.
+ * The rule itself is unchanged — nothing here widens what Odoo accepts.
  */
-export async function listEligibleStaff(): Promise<
-  Array<{ id: number; name: string; staff_id: string | false; department: Selection; email: string | false }>
-> {
+export interface StaffCandidate {
+  id: number
+  name: string
+  staff_id: string | false
+  department: Selection
+  email: string | false
+  state: Selection
+  employment_status: Selection
+  primary_responsibility: Selection
+  active: boolean
+}
+
+export interface EligibilityResult {
+  eligible: StaffCandidate[]
+  /** Staff who would be teachers but for one thing, with that thing named. */
+  blocked: Array<{ staff: StaffCandidate; reason: string; fixable: boolean }>
+}
+
+const TEACHING_RESPONSIBILITIES = ['teacher', 'homeroom', 'department_head', 'coordinator']
+
+const CANDIDATE_FIELDS = [
+  'name',
+  'staff_id',
+  'department',
+  'email',
+  'state',
+  'employment_status',
+  'primary_responsibility',
+  'active',
+] as const
+
+/** Why Odoo would refuse this staff member, in the order it would refuse them. */
+function refusalReason(staff: StaffCandidate): { reason: string; fixable: boolean } | null {
+  if (!staff.active) return { reason: 'the staff record is archived', fixable: false }
+  if (staff.state !== 'active') {
+    return {
+      reason:
+        staff.state === 'draft'
+          ? 'the staff record is still in draft — activate it first'
+          : `the staff record is ${String(staff.state)}`,
+      fixable: staff.state === 'draft' || staff.state === 'suspended',
+    }
+  }
+  if (staff.employment_status !== 'active') {
+    return { reason: `employment status is ${String(staff.employment_status)}`, fixable: false }
+  }
+  if (
+    staff.department !== 'academic' &&
+    !TEACHING_RESPONSIBILITIES.includes(String(staff.primary_responsibility))
+  ) {
+    return {
+      reason: 'not in the academic department and holds no teaching responsibility',
+      fixable: true,
+    }
+  }
+  return null
+}
+
+export async function listEligibleStaff(): Promise<EligibilityResult> {
   const existing = await orNullOnRefusal(
     searchRead<{ staff_id: Many2one }>('school.teacher', ['staff_id'], { limit: 500 }),
   )
-  const taken = (existing?.rows ?? [])
-    .map((row) => (row.staff_id ? row.staff_id[0] : 0))
-    .filter(Boolean)
-
-  const page = await orNullOnRefusal(
-    searchRead<{ id: number; name: string; staff_id: string | false; department: Selection; email: string | false }>(
-      'school.staff',
-      ['name', 'staff_id', 'department', 'email'],
-      {
-        domain: [
-          ['active', '=', true],
-          ['state', '=', 'active'],
-          ['employment_status', '=', 'active'],
-          ...(taken.length ? [['id', 'not in', taken]] : []),
-          '|',
-          ['department', '=', 'academic'],
-          ['primary_responsibility', 'in', ['teacher', 'homeroom', 'department_head', 'coordinator']],
-        ],
-        limit: 300,
-        order: 'name',
-      },
-    ),
+  const taken = new Set(
+    (existing?.rows ?? []).map((row) => (row.staff_id ? row.staff_id[0] : 0)).filter(Boolean),
   )
-  return page?.rows ?? []
+
+  /*
+    One read of everyone who does not already hold a profile, then the rule is
+    applied here so the same pass yields both lists. Two queries — one for
+    passes and one for near misses — would need the refusal logic expressed
+    twice, in two domains, and they would drift.
+  */
+  const page = await orNullOnRefusal(
+    searchRead<StaffCandidate>('school.staff', CANDIDATE_FIELDS, {
+      domain: taken.size ? [['id', 'not in', [...taken]]] : [],
+      limit: 400,
+      order: 'name',
+    }),
+  )
+
+  const eligible: StaffCandidate[] = []
+  const blocked: EligibilityResult['blocked'] = []
+  for (const staff of page?.rows ?? []) {
+    const refusal = refusalReason(staff)
+    if (!refusal) {
+      eligible.push(staff)
+    } else if (refusal.fixable) {
+      // Only the near misses are worth showing; a resigned caretaker is noise.
+      blocked.push({ staff, reason: refusal.reason, fixable: refusal.fixable })
+    }
+  }
+  return { eligible, blocked }
 }
 
 /**

@@ -94,6 +94,35 @@ if (offered.length === 0) {
     offered.map(Number),
     ['state', 'active', 'employment_status', 'department', 'primary_responsibility'],
   ])
+
+  /*
+    The reason this matters: a registrar who has just created somebody comes
+    here, sees a populated list without them in it, and cannot tell whether the
+    record failed to save or the rule excluded it. Silent omission was the bug.
+  */
+  const draftAcademic = await odoo(sid, 'school.staff', 'search_read', [], {
+    domain: [
+      ['state', '=', 'draft'],
+      ['active', '=', true],
+      '|',
+      ['department', '=', 'academic'],
+      ['primary_responsibility', 'in', ['teacher', 'homeroom', 'department_head', 'coordinator']],
+    ],
+    fields: ['name'],
+    limit: 5,
+  })
+  if (draftAcademic.length) {
+    const shown = (await page.locator('main').innerText()) ?? ''
+    check('a draft staff member is excluded, as Odoo requires',
+      !offered.includes(String(draftAcademic[0].id)), draftAcademic[0].name)
+    check('but the page says who is not eligible and why',
+      shown.includes(draftAcademic[0].name) && /draft/i.test(shown),
+      shown.split(String.fromCharCode(10)).find((l) => l.includes(draftAcademic[0].name))?.slice(0, 90) ?? '')
+    check('and links to the record that needs activating',
+      (await page.locator(`main a[href="/staff/${draftAcademic[0].id}"]`).count()) >= 1)
+  } else {
+    console.log('  SKIP  no draft academic staff to demonstrate the explanation')
+  }
   const teaching = ['teacher', 'homeroom', 'department_head', 'coordinator']
   const allEligible = staffRows.every(
     (r) =>
