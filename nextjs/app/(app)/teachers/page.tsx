@@ -1,5 +1,7 @@
-import { StatusBadge } from '@/components/ui'
+import { LinkButton, StatusBadge } from '@/components/ui'
 import { ResourceList } from '@/components/resource-list'
+import { RowLink } from '@/components/ui/table'
+import { canCreateTeacher } from '@/lib/odoo/models/teacher'
 import { formatSelection, formatText } from '@/lib/format'
 import { toOdooOrder } from '@/lib/list-query'
 import { listTeachers } from '@/lib/odoo/models/school'
@@ -8,9 +10,10 @@ import { selectionOptions } from '@/lib/odoo/selections'
 export const metadata = { title: 'Teachers · Async School' }
 
 export default async function TeachersPage({ searchParams }: PageProps<'/teachers'>) {
-  const [statuses, departments] = await Promise.all([
+  const [statuses, departments, canCreate] = await Promise.all([
     selectionOptions('school.teacher', 'teaching_status'),
     selectionOptions('school.teacher', 'department'),
+    canCreateTeacher(),
   ])
 
   return (
@@ -35,10 +38,23 @@ export default async function TeachersPage({ searchParams }: PageProps<'/teacher
           offset: query.offset,
         })
       }
+      rowHref={(row) => `/teachers/${row.id}`}
+      action={
+        canCreate ? (
+          <LinkButton href="/teachers/new" variant="primary" icon="plus">
+            New teaching profile
+          </LinkButton>
+        ) : undefined
+      }
       emptyTitle="No teacher profiles visible"
       emptyHint="A teacher profile is created when a staff member takes a teaching responsibility."
       columns={[
-        { key: 'name', label: 'Name', sortField: 'name', render: (row) => row.name },
+        {
+          key: 'name',
+          label: 'Name',
+          sortField: 'name',
+          render: (row) => <RowLink href={`/teachers/${row.id}`}>{row.name}</RowLink>,
+        },
         {
           key: 'teacherId',
           label: 'Teacher ID',

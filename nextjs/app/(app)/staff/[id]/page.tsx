@@ -204,11 +204,7 @@ export default async function StaffDetailPage({ params }: PageProps<'/staff/[id]
             hint="A teacher profile hangs off this staff record; the staff record is what Odoo scopes teaching permissions from."
             action={
               teacher ? (
-                <LinkButton
-                  href={`/teachers?q=${encodeURIComponent(teacher.name)}`}
-                  size="sm"
-                  icon="arrowRight"
-                >
+                <LinkButton href={`/teachers/${teacher.id}`} size="sm" icon="arrowRight">
                   Open teacher
                 </LinkButton>
               ) : undefined
@@ -227,9 +223,7 @@ export default async function StaffDetailPage({ params }: PageProps<'/staff/[id]
               >
                 <Row>
                   <Cell strong>
-                    <RowLink href={`/teachers?q=${encodeURIComponent(teacher.name)}`}>
-                      {teacher.name}
-                    </RowLink>
+                    <RowLink href={`/teachers/${teacher.id}`}>{teacher.name}</RowLink>
                   </Cell>
                   <Cell>
                     <span className="tabular">{formatText(teacher.teacher_id)}</span>
