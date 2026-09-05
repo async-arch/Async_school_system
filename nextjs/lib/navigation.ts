@@ -5,15 +5,23 @@ import type { SchoolRoles } from '@/lib/odoo/types'
  * Role-aware navigation.
  *
  * Visibility is a UX decision, never a security one — Odoo re-checks every
- * call. What it encodes is the *measured* ACL coverage from staging, so nobody
- * is offered a door that opens onto a 403.
+ * call. What it encodes is measured ACL coverage, so nobody is offered a door
+ * that opens onto a 403. Two tests hold it there: scripts/test-navigation-access.mjs
+ * states the whole matrix as data, and scripts/e2e-navigation-access.mjs signs
+ * in as each role and opens every link the sidebar actually drew.
  *
- * This block described an ACL that had stopped being true. The four rows it
- * credited — Director and Front Office on school.student, Director and
- * Registrar on school.mark — were added deliberately, then deleted by a merge
- * conflict resolution, so for a while the comment promised access the backend
- * had lost. They are restored, along with the rest of the matrix README.md
- * documents:
+ * The rule these predicates encode:
+ *
+ *   a route is offered when the role can actually read its model AND the
+ *   README's role matrix says the role has business there.
+ *
+ * Both halves matter. The first stops anyone being sent to a guaranteed
+ * refusal; the second stops the menu becoming a list of everything the ACL
+ * happens to permit. Neither is a security boundary — Odoo re-authorises every
+ * call regardless — so when the two disagree, the fix belongs in the ACL, not
+ * here.
+ *
+ * What the backend now allows, after the ACL alignment:
  *
  *   Director      read-only on students, marks, classes, attendance, the
  *                 timetable, teaching assignments, teachers, announcements and
@@ -21,18 +29,20 @@ import type { SchoolRoles } from '@/lib/odoo/types'
  *   Front Office  reads every student, for contact lookup only.
  *   Registrar     owns the timetable — full rights on school.class.schedule,
  *                 which school.day.builder needs in order to create slots.
+ *   Exam Officer  reads enrolments and teaching assignments, which is how a
+ *                 mark list is traced back to the teacher who owns it.
  *
  * Still absent, and therefore still hidden here: Director has no ACL row on
  * school.subject, school.academic.year, school.term or school.section, and
  * Front Office has none on any academic model beyond students. Widening those
  * is an authorisation decision for the owner — do not work around it here.
  *
- * The predicates below have NOT been rewidened to match. Several are now
- * narrower than the backend allows — Director can read classes, attendance,
- * the timetable, assignments, teachers, announcements and programs but is
- * offered none of them, and Registrar can build a timetable but is not offered
- * /schedule. Correcting them is the navigation PR's job, not this file's
- * documentation. Nothing here is a security boundary either way.
+ * One deliberate omission. A teacher holds read on school.report.card, but
+ * that model carries **no record rule at all**, so the rows are unscoped: every
+ * report card in the school, not the teacher's own classes. /report-cards is
+ * therefore not offered to a teacher. Hiding the link is not what makes that
+ * safe — only a record rule would — so it is written up rather than papered
+ * over here.
  *
  * The sections are the school's own domains rather than the module's table
  * names: somebody looking for "who is in Grade 7" reaches for People, not for
@@ -97,19 +107,22 @@ const NAV_RULES: NavRuleSection[] = [
           any(r.isRegistrar, r.isTeacher, r.isAdmin, r.isExamOfficer, r.isDirector, r.isFrontOffice),
       },
       {
-  href: '/guardians',
-  label: 'Guardians',
-  icon: 'students',
-  description: 'Student guardian relationships',
-  visible: (r) =>
-    any(r.isRegistrar, r.isAdmin, r.isDirector, r.isFrontOffice),
-},
+        href: '/guardians',
+        label: 'Guardians',
+        icon: 'students',
+        description: 'Student guardian relationships',
+        // A teacher reads the guardians of their own classes' students, which
+        // is how they reach a parent. The record rule does that scoping.
+        visible: (r) =>
+          any(r.isRegistrar, r.isAdmin, r.isDirector, r.isFrontOffice, r.isTeacher),
+      },
       {
         href: '/enrollments',
         label: 'Enrolments',
         icon: 'enrolment',
         description: 'Placement in a class for an academic year',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isDirector, r.isTeacher),
+        visible: (r) =>
+          any(r.isRegistrar, r.isAdmin, r.isDirector, r.isTeacher, r.isExamOfficer),
       },
       {
         href: '/staff',
@@ -119,12 +132,12 @@ const NAV_RULES: NavRuleSection[] = [
           any(r.isRegistrar, r.isAdmin, r.isDirector, r.isHr, r.isFrontOffice, r.isTeacher),
       },
       {
-        // No director ACL row on school.teacher.
         href: '/teachers',
         label: 'Teachers',
         icon: 'teachers',
         description: 'Teaching profiles and workload',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isExamOfficer),
+        visible: (r) =>
+          any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isExamOfficer, r.isDirector),
       },
     ],
   },
@@ -133,26 +146,28 @@ const NAV_RULES: NavRuleSection[] = [
     title: 'Teaching',
     items: [
       {
-        // school.class.schedule carries ACL rows for admin and teacher only.
         href: '/schedule',
         label: 'Timetable',
         icon: 'timetable',
         description: 'The weekly lesson grid',
-        visible: (r) => any(r.isAdmin, r.isTeacher),
+        // The registrar builds the timetable and now holds the rights to do
+        // it; a teacher sees their own slots, a director reads all of them.
+        visible: (r) => any(r.isAdmin, r.isTeacher, r.isRegistrar, r.isDirector),
       },
       {
-        // No director ACL row on school.attendance.
         href: '/attendance',
         label: 'Attendance',
         icon: 'attendance',
         description: 'Daily register by class',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher),
+        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isDirector),
       },
       {
         href: '/assignments',
         label: 'Teaching assignments',
         icon: 'assignments',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher),
+        // The exam officer reads assignments to know whose mark list is whose.
+        visible: (r) =>
+          any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isDirector, r.isExamOfficer),
       },
     ],
   },
@@ -206,19 +221,18 @@ const NAV_RULES: NavRuleSection[] = [
     title: 'Communication',
     items: [
       {
-        // Director has no ACL row on school.announcement.
         href: '/announcements',
         label: 'Announcements',
         icon: 'announcements',
-        visible: (r) => any(r.isRegistrar, r.isFrontOffice, r.isAdmin, r.isTeacher),
+        visible: (r) =>
+          any(r.isRegistrar, r.isFrontOffice, r.isAdmin, r.isTeacher, r.isDirector),
       },
       {
-        // No director ACL row on school.program.
         href: '/programs',
         label: 'Programs',
         icon: 'programs',
         description: 'Events and activities',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher),
+        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isDirector),
       },
     ],
   },
@@ -230,7 +244,8 @@ const NAV_RULES: NavRuleSection[] = [
         href: '/classes',
         label: 'Classes',
         icon: 'classes',
-        visible: (r) => any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isExamOfficer),
+        visible: (r) =>
+          any(r.isRegistrar, r.isAdmin, r.isTeacher, r.isExamOfficer, r.isDirector),
       },
       {
         href: '/subjects',
