@@ -571,3 +571,136 @@ export async function generateReportCards(input: {
 export function canGenerateReportCards(): Promise<boolean> {
   return hasAccess('school.report.card.generate', 'create')
 }
+
+/* --------------------------------------------------- promotion authoring --- */
+
+/**
+ * Creating a promotion batch — the step that closes an academic year.
+ *
+ * `school.promotion.batch` could be listed, opened and run, and could be
+ * created nowhere: on a fresh database the last three steps of the school year
+ * (calculate → approve → apply) were unreachable, because there was never a
+ * batch to run them on.
+ *
+ * Everything below the create is Odoo's. `action_calculate_outcomes` reads each
+ * student's published report cards — falling back to their recorded marks —
+ * averages them against this batch's threshold, and picks promoted, retained
+ * or graduated. `action_approve` refuses a batch with no lines or with any
+ * promoted/retained student who has no target class. `action_apply_promotion`
+ * completes the old enrolment and opens the next one. None of that is repeated
+ * here, and no outcome is ever computed in TypeScript.
+ */
+
+export interface PromotionYearOption {
+  id: number
+  name: string
+  date_start: string
+  date_end: string
+  state: Selection
+}
+
+export interface PromotionGradeOption {
+  id: number
+  name: string
+  sequence: number
+}
+
+export interface PromotionClassOption {
+  id: number
+  name: string
+  yearId: number
+  gradeId: number
+}
+
+/**
+ * The pickers a batch is built from.
+ *
+ * Classes are fetched flat with their year and grade so the form can narrow
+ * them as the two are chosen — the same shape `class_ids` carries as a domain
+ * on the model. Odoo re-checks the domain on write regardless.
+ */
+export async function promotionFormOptions(): Promise<{
+  years: PromotionYearOption[]
+  grades: PromotionGradeOption[]
+  classes: PromotionClassOption[]
+}> {
+  const [years, grades, classes] = await Promise.all([
+    searchRead<PromotionYearOption>(
+      'school.academic.year',
+      ['name', 'date_start', 'date_end', 'state'],
+      { limit: 50, order: 'date_start desc', withTotal: false },
+    ),
+    searchRead<PromotionGradeOption>('school.grade', ['name', 'sequence'], {
+      domain: [['active', '=', true]],
+      limit: 50,
+      order: 'sequence',
+      withTotal: false,
+    }),
+    searchRead<{ id: number; name: string; academic_year_id: Many2one; grade_id: Many2one }>(
+      'school.class',
+      ['name', 'academic_year_id', 'grade_id'],
+      { domain: [['active', '=', true]], limit: 500, order: 'name', withTotal: false },
+    ),
+  ])
+
+  return {
+    years: years.rows,
+    grades: grades.rows,
+    classes: classes.rows.flatMap((row) => {
+      const yearId = m2oId(row.academic_year_id)
+      const gradeId = m2oId(row.grade_id)
+      return yearId && gradeId ? [{ id: row.id, name: row.name, yearId, gradeId }] : []
+    }),
+  }
+}
+
+/**
+ * Batches already covering this year and grade that have not been applied.
+ *
+ * Odoo has **no uniqueness constraint** on a promotion batch, so nothing stops
+ * a second one for the same grade and year existing — and running both would
+ * advance the same students twice. This is a frontend guard against that, not
+ * a rule: the Odoo backend would still allow it, and a constraint on the model
+ * is the real fix. See the note in the pull request.
+ */
+export async function unfinishedBatchesFor(
+  yearId: number,
+  gradeId: number,
+): Promise<PromotionBatchRow[]> {
+  const page = await searchRead<PromotionBatchRow>('school.promotion.batch', PROMOTION_FIELDS, {
+    domain: [
+      ['academic_year_id', '=', yearId],
+      ['grade_id', '=', gradeId],
+      ['state', '!=', 'done'],
+    ],
+    limit: 5,
+    withTotal: false,
+  })
+  return page.rows
+}
+
+export interface PromotionBatchIntake {
+  academicYearId: number
+  targetAcademicYearId: number
+  gradeId: number
+  classIds: number[]
+  minimumPassAverage: number
+  maxFailedSubjects: number
+}
+
+export function createPromotionBatch(intake: PromotionBatchIntake): Promise<number> {
+  return create('school.promotion.batch', {
+    academic_year_id: intake.academicYearId,
+    target_academic_year_id: intake.targetAcademicYearId,
+    grade_id: intake.gradeId,
+    // Empty means "every class of that grade in that year", which is what
+    // action_calculate_outcomes falls back to.
+    class_ids: [[6, 0, intake.classIds]],
+    minimum_pass_average: intake.minimumPassAverage,
+    max_failed_subjects: intake.maxFailedSubjects,
+  })
+}
+
+export function canCreatePromotionBatch(): Promise<boolean> {
+  return hasAccess('school.promotion.batch', 'create')
+}
