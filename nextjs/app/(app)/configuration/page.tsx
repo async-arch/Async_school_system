@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Card, CardHeader, Cell, DataTable, DateText, EmptyState, ErrorState, PageHeader, Row } from '@/components/ui'
 import { RowLink } from '@/components/ui/table'
-import { formatSelection } from '@/lib/format'
+import { formatClock, formatSelection } from '@/lib/format'
 import { toOdooError } from '@/lib/odoo/errors'
 import { hasAccess } from '@/lib/odoo/client'
 import { listAcademicYears } from '@/lib/odoo/models/school'
@@ -80,12 +80,9 @@ function VocabularyCard({
   )
 }
 
-const time = (value: unknown) => {
-  if (typeof value !== 'number' || value === 0) return '—'
-  const hours = Math.floor(value)
-  const minutes = Math.round((value - hours) * 60)
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-}
+/** An unset shift time is 0, which `formatClock` would draw as a real 00:00. */
+const time = (value: unknown) =>
+  typeof value === 'number' && value > 0 ? formatClock(value) : '—'
 
 export default async function ConfigurationPage() {
   let grades, sections, streams, shifts, campuses, rooms, terms, curriculum
@@ -141,6 +138,10 @@ export default async function ConfigurationPage() {
               { href: '/configuration/grading', label: 'Grading schemes' },
               { href: '/configuration/questionnaire', label: 'Questionnaire' },
               { href: '/configuration/document-rules', label: 'Document rules' },
+              // Neither is an academic vocabulary, so neither has a card
+              // below; both are still configuration a school has to set.
+              { href: '/configuration/vocabulary/job-titles', label: 'Job titles' },
+              { href: '/configuration/vocabulary/document-types', label: 'Document types' },
             ].map((link) => (
               <Link
                 key={link.href}
@@ -205,6 +206,14 @@ export default async function ConfigurationPage() {
             <CardHeader
               title="Terms"
               hint="Each term belongs to one academic year and must fall inside it."
+              action={
+                <Link
+                  href="/configuration/terms"
+                  className="shrink-0 text-[12px] text-action-blue hover:underline"
+                >
+                  Manage
+                </Link>
+              }
             />
           </div>
           {terms.rows.length === 0 ? (
@@ -227,6 +236,7 @@ export default async function ConfigurationPage() {
         <div className="grid gap-4 lg:grid-cols-2">
           <VocabularyCard
             title="Grades"
+            manageHref="/configuration/vocabulary/grades"
             hint="Grade 1 to 12, each with a level Odoo uses for the age rule."
             head={['Grade', 'Code', 'Level', 'Active']}
             rows={grades}
@@ -241,6 +251,7 @@ export default async function ConfigurationPage() {
           />
           <VocabularyCard
             title="Sections"
+            manageHref="/configuration/vocabulary/sections"
             head={['Section', 'Classes', 'Sequence', 'Active']}
             rows={sections}
             render={(row) => (
@@ -254,6 +265,7 @@ export default async function ConfigurationPage() {
           />
           <VocabularyCard
             title="Streams"
+            manageHref="/configuration/vocabulary/streams"
             hint="Available to Grades 11 and 12 only — Odoo enforces that."
             head={['Stream', 'Code', 'Active']}
             rows={streams}
@@ -267,6 +279,7 @@ export default async function ConfigurationPage() {
           />
           <VocabularyCard
             title="Shifts"
+            manageHref="/configuration/vocabulary/shifts"
             head={['Shift', 'Code', 'Starts', 'Ends']}
             rows={shifts}
             render={(row) => (

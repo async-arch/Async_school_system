@@ -76,6 +76,26 @@ export function formatTimeRange(start: OdooValue<number>, end: OdooValue<number>
 }
 
 /**
+ * The inverse of `formatClock`, for a form that writes a clock time back.
+ *
+ * `<input type="time">` yields "08:30", and Odoo wants 8.5. An empty input is
+ * 0 rather than null, because that is the value the shift model's
+ * `CHECK(time_end = 0 OR time_end > time_start)` treats as "not set".
+ * Anything that is not a well-formed HH:MM is null, so a caller can tell a
+ * blank apart from a value it should refuse.
+ */
+export function clockToFloat(value: string): number | null {
+  const trimmed = value.trim()
+  if (!trimmed) return 0
+  const match = /^(\d{1,2}):(\d{2})$/.exec(trimmed)
+  if (!match) return null
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59) return null
+  return hours + minutes / 60
+}
+
+/**
  * A selection code as prose: `pending_verification` → `Pending verification`.
  *
  * Where a screen can afford the round trip it should prefer Odoo's own

@@ -526,12 +526,51 @@ export interface TermRow {
   active: boolean
 }
 
+export const TERM_FIELDS = [
+  'name',
+  'academic_year_id',
+  'date_start',
+  'date_end',
+  'sequence',
+  'active',
+] as const
+
 export function listTerms(): Promise<Page<TermRow>> {
-  return searchRead<TermRow>(
-    'school.term',
-    ['name', 'academic_year_id', 'date_start', 'date_end', 'sequence', 'active'],
-    { limit: 100, order: 'academic_year_id desc, sequence' },
-  )
+  return searchRead<TermRow>('school.term', TERM_FIELDS, {
+    limit: 100,
+    order: 'academic_year_id desc, sequence',
+    // Archived terms still have to be visible: reopening one is why somebody
+    // opens this screen. A domain on `active` is silently ignored; this is
+    // Odoo's own switch.
+    context: { active_test: false },
+    withTotal: false,
+  })
+}
+
+/**
+ * Terms are created and edited here rather than through the generic
+ * vocabulary screen, because a term is not a vocabulary: it belongs to an
+ * academic year and Odoo refuses one whose dates fall outside that year, or
+ * whose name repeats within it. The form therefore has to ask for a year and
+ * two dates, and let Odoo answer on the rest.
+ *
+ * `school.term` also carries a second, unused pair of date fields —
+ * `start_date`/`end_date` alongside the required `date_start`/`date_end`.
+ * Only the latter pair is constrained against the academic year and read by
+ * assessments, marks, report cards and assignments, so only that pair is
+ * written here. The vestigial pair is left alone; removing it is a model
+ * change, not a frontend one.
+ */
+export function getTerm(id: number): Promise<TermRow | null> {
+  return readOne<TermRow>('school.term', id, TERM_FIELDS)
+}
+
+export function createTerm(values: Record<string, unknown>): Promise<number> {
+  return create('school.term', values)
+}
+
+export function updateTerm(id: number, values: Record<string, unknown>): Promise<boolean> {
+  return write('school.term', [id], values)
 }
 
 /* ---------------------------------------------------------- curriculum --- */
