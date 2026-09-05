@@ -1,5 +1,5 @@
 import 'server-only'
-import { callKw, create, readOne, searchRead, write } from '@/lib/odoo/client'
+import { callKw, create, hasAccess, readOne, searchRead, write } from '@/lib/odoo/client'
 import { orNullOnRefusal } from '@/lib/odoo/errors'
 import { listDomain, type ListOptions } from '@/lib/odoo/list'
 import type { Many2one, Page, Selection } from '@/lib/odoo/types'
@@ -149,6 +149,174 @@ export function listScheduleGrid(options: {
 
 export function getSchedule(id: number): Promise<ScheduleRow | null> {
   return readOne<ScheduleRow>('school.class.schedule', id, SCHEDULE_FIELDS)
+}
+
+/* ------------------------------------------------------- slot authoring --- */
+
+/**
+ * Creating and editing one timetable slot.
+ *
+ * The day builder makes a whole day at once and is the normal way a timetable
+ * gets built. This is the other half: the one-off — a makeup lesson, a room
+ * that changed, a period that moves to Tuesday — which the builder cannot
+ * express and which had no path at all.
+ *
+ * **Everything hangs off the teacher assignment.** `school.class.schedule`
+ * refuses a create without one, and `_check_teacher_assignment` then requires
+ * that the slot's class, subject, term, year and teacher all match that exact
+ * assignment and that it is active. So the form asks for the assignment and
+ * this derives the other five from it, rather than asking for six fields that
+ * can disagree. That derivation is Odoo's own `_onchange_teacher_assignment_id`
+ * — which never fires over JSON-RPC, so it has to happen here.
+ *
+ * Nothing else is re-implemented. The double-booking check, the "end after
+ * start" constraint, the active-teacher rule on a published slot and the
+ * reschedule-reason requirement all stay in Odoo and answer in its words.
+ */
+
+export interface ScheduleDetail extends ScheduleRow {
+  teacher_assignment_id: Many2one
+  academic_year_id: Many2one
+  notes: string | false
+  reschedule_reason: string | false
+}
+
+export const SCHEDULE_DETAIL_FIELDS = [
+  ...SCHEDULE_FIELDS,
+  'teacher_assignment_id',
+  'academic_year_id',
+  'notes',
+  'reschedule_reason',
+] as const
+
+export function getScheduleDetail(id: number): Promise<ScheduleDetail | null> {
+  return readOne<ScheduleDetail>('school.class.schedule', id, SCHEDULE_DETAIL_FIELDS)
+}
+
+export interface AssignmentOption {
+  id: number
+  label: string
+  classId: number
+  subjectId: number
+  termId: number
+  teacherId: number
+}
+
+/**
+ * The active assignments a slot may be created against, already labelled.
+ *
+ * Mirrors the `teacher_assignment_id` domain on the model — class, subject,
+ * term and `state = active` — so the picker cannot offer one Odoo would then
+ * refuse.
+ */
+export async function listAssignmentOptions(): Promise<AssignmentOption[]> {
+  const rows = await searchRead<{
+    id: number
+    class_id: Many2one
+    subject_id: Many2one
+    term_id: Many2one
+    teacher_id: Many2one
+  }>('school.teacher.assignment', ['class_id', 'subject_id', 'term_id', 'teacher_id'], {
+    domain: [
+      ['state', '=', 'active'],
+      ['active', '=', true],
+    ],
+    limit: 500,
+    order: 'class_id, subject_id',
+    withTotal: false,
+  })
+
+  const id = (value: Many2one) => (Array.isArray(value) ? (value[0] as number) : 0)
+  const label = (value: Many2one) => (Array.isArray(value) ? String(value[1]) : '')
+
+  return rows.rows
+    .filter((row) => id(row.class_id) && id(row.subject_id) && id(row.term_id))
+    .map((row) => ({
+      id: row.id,
+      label: `${label(row.class_id)} · ${label(row.subject_id)} · ${label(row.term_id)} — ${label(row.teacher_id)}`,
+      classId: id(row.class_id),
+      subjectId: id(row.subject_id),
+      termId: id(row.term_id),
+      teacherId: id(row.teacher_id),
+    }))
+}
+
+/** The scheduling facts of a slot — everything that is not the assignment. */
+export interface SlotTiming {
+  dayOfWeek: string
+  startTime: number
+  endTime: number
+  roomId?: number
+  scheduleType: string
+  notes?: string
+}
+
+/**
+ * The five fields Odoo derives from the assignment.
+ *
+ * Sent explicitly because `_check_teacher_assignment` compares them against
+ * the assignment on every write, and because `create` needs class and term to
+ * resolve `academic_year_id` through its related field.
+ */
+function fromAssignment(option: AssignmentOption) {
+  return {
+    teacher_assignment_id: option.id,
+    class_id: option.classId,
+    subject_id: option.subjectId,
+    term_id: option.termId,
+    teacher_id: option.teacherId,
+  }
+}
+
+export function createSlot(
+  intake: SlotTiming,
+  assignment: AssignmentOption,
+): Promise<number> {
+  return create('school.class.schedule', {
+    ...fromAssignment(assignment),
+    day_of_week: intake.dayOfWeek,
+    start_time: intake.startTime,
+    end_time: intake.endTime,
+    room_id: intake.roomId ?? false,
+    schedule_type: intake.scheduleType,
+    notes: intake.notes || false,
+  })
+}
+
+/**
+ * Edit the scheduling facts of an existing slot.
+ *
+ * Deliberately not the assignment: moving a slot to a different teacher,
+ * subject or class is a different lesson, not an edit of this one, and Odoo
+ * would have to re-check five interlocking fields to allow it. Cancel and
+ * create instead — which is also what leaves an honest audit trail.
+ *
+ * `reschedule` writes the state and the reason alongside the change, in one
+ * call, because `_check_reschedule_reason` refuses the state without the
+ * reason. Odoo's field tracking keeps the previous day and times in the log.
+ */
+export function updateSlot(
+  id: number,
+  values: SlotTiming,
+  reschedule?: { reason: string },
+): Promise<boolean> {
+  return write('school.class.schedule', [id], {
+    day_of_week: values.dayOfWeek,
+    start_time: values.startTime,
+    end_time: values.endTime,
+    room_id: values.roomId ?? false,
+    schedule_type: values.scheduleType,
+    notes: values.notes || false,
+    ...(reschedule ? { state: 'rescheduled', reschedule_reason: reschedule.reason } : {}),
+  })
+}
+
+export function canWriteSchedule(): Promise<boolean> {
+  return hasAccess('school.class.schedule', 'write')
+}
+
+export function canCreateSchedule(): Promise<boolean> {
+  return hasAccess('school.class.schedule', 'create')
 }
 
 /** Odoo stores times as a float; 8.5 is 08:30. */
