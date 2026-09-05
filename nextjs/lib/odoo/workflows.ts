@@ -203,13 +203,30 @@ export const WORKFLOWS = {
   },
 
   /* -------------------------------------------------------- schedule --- */
+  /*
+    `action_reset_draft` exists on the model and was reachable from nowhere, so
+    a cancelled or completed slot was a dead end in this application: the only
+    way back was the Odoo backend. None of these four methods carries a state
+    guard — the model lets any of them run from any state — so `from` is this
+    table's judgement about what is worth offering, and it is deliberately
+    narrower than what Odoo would accept.
+
+    There is no `action_reschedule`. Moving a live lesson is an edit of its day
+    and times plus a reason, which `_check_reschedule_reason` requires, so it
+    lives on the edit form and is written in one call. See updateSlot().
+  */
   schedule: {
     model: 'school.class.schedule',
     stateField: 'state',
     transitions: [
       { key: 'publish', method: 'action_publish', label: 'Publish', from: ['draft', 'rescheduled'] },
       { key: 'complete', method: 'action_complete', label: 'Mark completed', from: ['published'] },
-      { key: 'cancel', method: 'action_cancel', label: 'Cancel', from: ['draft', 'published'], destructive: true, confirm: 'Cancel this slot? It releases the teacher, class and room.' },
+      { key: 'cancel', method: 'action_cancel', label: 'Cancel', from: ['draft', 'published', 'rescheduled'], destructive: true, confirm: 'Cancel this slot? It releases the teacher, class and room.' },
+      {
+        key: 'reset', method: 'action_reset_draft', label: 'Return to draft',
+        from: ['published', 'cancelled', 'completed', 'rescheduled'],
+        confirm: 'Return this slot to draft? It stops being part of the published timetable, and a cancelled slot starts holding its teacher, class and room again.',
+      },
     ],
   },
 

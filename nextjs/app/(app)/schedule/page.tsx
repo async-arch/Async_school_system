@@ -44,9 +44,18 @@ export default async function SchedulePage({ searchParams }: PageProps<'/schedul
             Grid view
           </Link>
           {canBuild ? (
-            <LinkButton href="/schedule/build" variant="primary" icon="plus">
-              Build a day
-            </LinkButton>
+            <>
+              {/* The one-off sits beside the bulk path, not instead of it. */}
+              <Link
+                href="/schedule/new"
+                className="rounded-[9999px] border border-silver px-4 py-2 text-[13px] hover:bg-paper"
+              >
+                Add a period
+              </Link>
+              <LinkButton href="/schedule/build" variant="primary" icon="plus">
+                Build a day
+              </LinkButton>
+            </>
           ) : null}
         </div>
       }
